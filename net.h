@@ -11,6 +11,14 @@
 #define FALSE 0U
 #define MAX_VLAN_MEMBERSHIP 10U /* upto 4095 Ids possible using 12-bit vlan field */
 
+/* Interface change flags
+   Used for notification to applications */
+#define IF_UP_DOWN_CHANGE_F         (0U)
+#define IF_IP_ADDR_CHANGE_F         (1U)
+#define IF_OPER_MODE_CHANGE_F       (1U << 1)
+#define IF_VLAN_MEMBERSHIP_CHANGE_F (1U << 2)
+#define IF_METRIC_CHANGE_F          (1U << 3)
+
 typedef bool bool_t;
 typedef struct graph_ graph_t;
 typedef struct node_ node_t;
@@ -50,6 +58,7 @@ typedef struct intf_nw_prop_{
     /* L2 Properties */
     mac_add_t mac_addr;
     intf_l2_mode_t intf_l2_mode;
+    bool_t is_up;
     unsigned int vlans[MAX_VLAN_MEMBERSHIP];
 
     /* L3 Properties */
@@ -82,6 +91,8 @@ static inline void init_intf_nw_prop(intf_nw_prop_t *intf_nw_prop)
     memset(&intf_nw_prop->ip_addr.ip_addr, 0, 16);
     intf_nw_prop->mask = 0U;
 }
+
+#define IF_IS_UP(intf_ptr) ((intf_ptr)->intf_nw_prop.is_up == TRUE)
 
 #define IF_MAC(intf_ptr) ((intf_ptr)->intf_nw_prop.mac_addr.mac_addr)
 #define IF_IP(intf_ptr)  ((intf_ptr)->intf_nw_prop.ip_addr.ip_addr)

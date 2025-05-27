@@ -2,6 +2,7 @@
 #include "CommandParser/cmdtlv.h"
 #include "cmdcodes.h"
 #include "graph.h"
+#include "utils.h"
 #include <stdio.h>
 
 
@@ -57,6 +58,37 @@ static int arp_handler(param_t *param, ser_buff_t *tlv_buf, op_mode enable_or_di
     return 0;
 }
 
+/* Display Node Interfaces - list of interfaces in a node */
+static void display_node_interfaces(param_t *param, ser_buff_t *tlv_buf){
+
+    node_t *node;
+    char *node_name;
+    tlv_struct_t *tlv = NULL;
+
+    TLV_LOOP_BEGIN(tlv_buf, tlv){
+
+        if(strncmp(tlv->leaf_id, "node-name", strlen("node-name")) ==0)
+            node_name = tlv->value;
+
+    }TLV_LOOP_END;
+
+    if(!node_name)
+        return;
+
+    node = get_node_by_node_name(topo, node_name);
+    
+    int i = 0;
+    interface_t *intf;
+
+    for(; i < MAX_IF_PER_NODE; i++){
+
+        intf = node->intf[i];
+        if(!intf) continue;
+
+        printf(" %s\n", intf->if_name);
+    }
+}
+
 /* General Validations */
 int validate_node_existence(char *node_name)
 {
@@ -69,8 +101,7 @@ int validate_node_existence(char *node_name)
     }
 }
 
-int
-validate_mask_value(char *mask_str){
+int validate_mask_value(char *mask_str){
 
     unsigned int mask = atoi(mask_str);
     if(!mask){
@@ -79,6 +110,17 @@ validate_mask_value(char *mask_str){
     }
     if(mask >= 0 && mask <= 32)
         return VALIDATION_SUCCESS;
+    return VALIDATION_FAILED;
+}
+
+static int validate_if_up_down_status(char *value){
+
+    if((strncmp(value, "up", strlen("up")) == 0U) && (strlen("up") == strlen(value))){
+        return VALIDATION_SUCCESS;
+    }
+    else if((strncmp(value, "down", strlen("down")) == 0U) && (strlen("down") == strlen(value))){
+        return VALIDATION_SUCCESS;
+    }
     return VALIDATION_FAILED;
 }
 
@@ -254,6 +296,73 @@ l3_config_handler(param_t *param, ser_buff_t *tlv_buf, op_mode enable_or_disable
     return 0;
 }
 
+static int intf_config_handler(param_t *param, ser_buff_t *tlv_buf, op_mode enable_or_disable)
+{
+    char *node_name;
+    node_t *node;
+    char *intf_name;
+    interface_t *interface;
+    char *if_up_down;
+    int CMDCODE;
+    tlv_struct_t *tlv = NULL;
+
+    char *l2_mode_option;
+    uint32_t intf_new_metric_val;
+
+    CMDCODE = EXTRACT_CMD_CODE(tlv_buf);
+
+    TLV_LOOP_BEGIN(tlv_buf, tlv){
+        if(strncmp(tlv->leaf_id, 'node-name', strlen("node-name")) == 0U){
+            node_name = tlv->value;
+        }
+        else if(strncmp(tlv->leaf_id, "if-name", strlen("if-str")) == 0U){
+            intf_name = tlv->value;
+        }
+        else if(strncmp(tlv->leaf_id, "vlan-id", strlen("vlan-id")) == 0U){
+            intf_name = atoi(tlv->value);
+        }
+        else if(strncmp(tlv->leaf_id, "l2-mode-val", strlen("l2-mode-val")) == 0)
+            l2_mode_option = tlv->value;
+        else if(strncmp(tlv->leaf_id, "if-up-down", strlen("if-up-down")) == 0)
+             if_up_down = tlv->value; 
+        else if(strncmp(tlv->leaf_id, "metric-val", strlen("metric-val")) == 0)
+             intf_new_metric_val = atoi(tlv->value);            
+        else
+            assert(0);
+    }TLV_LOOP_END;
+
+    node = get_node_by_node_name(topo,node_name);
+    interface = get_node_intf_by_name(node, intf_name);
+    if(!interface){
+        printf("%s: Interface %s does not exist\n", __FUNCTION__, intf_name);
+        return -1;
+    }
+
+    uint32_t if_change_flags = 0U;
+    switch(CMDCODE)
+    {
+        case CMDCODE_CONF_INTF_UP_DOWN:
+        {
+            if(strncmp(if_up_down, "up", strlen("up")) == 0U){
+                if(interface->intf_nw_prop.is_up == FALSE){
+                    SET_BIT(if_change_flags, IF_UP_DOWN_CHANGE_F);
+                }
+                interface->intf_nw_prop.is_up = TRUE;
+            }
+            else if (strncmp(if_up_down, "down", strlen("down")) == 0U){
+                if(interface->intf_nw_prop.is_up == TRUE){
+                    SET_BIT(if_change_flags, IF_UP_DOWN_CHANGE_F);
+                }
+                interface->intf_nw_prop.is_up = FALSE;
+            }
+            if(IS_BIT_SET(if_change_flags, IF_UP_DOWN_CHANGE_F)){
+                nfc_intf_invoke_notification_to_subscribers(interface, 0, if_change_flags);
+            }
+            break;
+        }
+    }
+}
+
 void nw_init_cli(void)
 {
     init_libcli();
@@ -371,9 +480,23 @@ void nw_init_cli(void)
             libcli_register_param(&node, &node_name);
             {
                 /* config node <node_name> interface */
+                static param_t interface;
+                init_param(&interface, CMD, "interface", 0, 0, INVALID, 0, "\"interface\" keyword");
+                libcli_register_display_callback(&interface, display_node_interfaces);
+                libcli_register_param(&node_name, &interface);
                 {
                     /* config node <node_name> interface <if-name> */
+                    static param_t if_name;
+                    init_param(&if_name, LEAF, 0, 0, 0, STRING, "if-name", "Interface Name");
+                    libcli_register_param(&interface, &if_name);
                     {
+                        /* config node <node_name> interface <if_name> <up|down> */
+                        {
+                            static param_t if_up_down_status;
+                            init_param(&if_up_down_status, LEAF, 0, intf_config_handler, validate_if_up_down_status, STRING, "if-up-down", "<up|down>");
+                            libcli_register_param(&if_name, &if_up_down_status);
+                            set_param_cmd_code(&if_up_down_status, CMDCODE_CONF_INTF_UP_DOWN);
+                        }
                         /* config node <node_name> interface <if-name> l2mode */
                         {
                             /* config node <node_name> interface <if-name> l2mode <access|trunk> */

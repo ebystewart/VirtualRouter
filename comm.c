@@ -58,6 +58,12 @@ static void _pkt_receive(node_t *receiving_node, char *pkt_with_aux_data, unsign
         printf("message received : %s, on node %s, by interface %s\n", (pkt_with_aux_data + IF_NAME_SIZE), \
                                                                         receiving_node->node_name, recv_intf_name);
     }
+
+    /*Interface is not Operationally Up*/
+    if(!IF_IS_UP(recv_intf)){
+        return;
+    }
+    
     /* Right align the received data */
     char *pkt = pkt_buffer_shift_right((pkt_with_aux_data + IF_NAME_SIZE), (pkt_size - IF_NAME_SIZE), (MAX_RECEIVE_BUFFER_SIZE-IF_NAME_SIZE));
 

@@ -15,7 +15,8 @@ OBJS=glueThread/glthread.o	\
 		Layer3/layer3.o		\
 		Layer3/ip.o		    \
 		Layer5/layer5.o		\
-		Layer5/ping.o			
+		Layer5/ping.o		\
+		tcpip_notif.o	
 
 test.exe:${OBJS} CommandParser/libcli.a
 	${CC} ${CFLAGS} ${OBJS} -o test.exe ${LIBS}
@@ -36,13 +37,16 @@ net.o:net.c
 	${CC} ${CFLAGS} -c net.c -I . -o net.o
 
 nwcli.o:nwcli.c
-	${CC} ${CFLAGS} -c nwcli.c -I . -o nwcli.o
+	${CC} ${CFLAGS} -c nwcli.c -I . -I BitOp/ -o nwcli.o
 
 comm.o:comm.c
 	${CC} ${CFLAGS} -c comm.c -I . -o comm.o
 
 utils.o:utils.c
 	${CC} ${CFLAGS} -c utils.c -I . -o utils.o
+
+tcpip_notif.o:tcpip_notif.c
+	${CC} ${CFLAGS} -c tcpip_notif.c -I . -o tcpip_notif.o
 
 Layer2/layer2.o:Layer2/layer2.c
 	${CC} ${CFLAGS} -c Layer2/layer2.c -I . -o Layer2/layer2.o

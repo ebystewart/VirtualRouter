@@ -105,13 +105,24 @@ void dump_node_nw_props(node_t * node)
 void dump_intf_props(interface_t *interface)
 {
     dump_interface(interface);
+
+    printf("\t IF Status : %s\n", IF_IS_UP(interface) ? "UP" : "DOWN");
+
     if(interface->intf_nw_prop.is_ipaddr_config){
         printf("\t IP Addr = %s/%u", IF_IP(interface), interface->intf_nw_prop.mask);
         printf("\t MAC = %x:%x:%x:%x:%x:%x\n", (0xFFU & IF_MAC(interface)[0]), (0xFFU & IF_MAC(interface)[1]), (0xFFU & IF_MAC(interface)[2]),
         (0xFFU & IF_MAC(interface)[3]), (0xFFU & IF_MAC(interface)[4]), (0xFFU & IF_MAC(interface)[5]));
     }
     else{
-        /* TBD */
+        printf("\t l2 mode = %s", intf_l2_mode_str(IF_L2_MODE(interface)));
+        printf("\t vlan membership : ");
+        int i = 0;
+        for(; i < MAX_VLAN_MEMBERSHIP; i++){
+           if(interface->intf_nw_prop.vlans[i]){
+               printf("%u  ", interface->intf_nw_prop.vlans[i]);
+           }
+        }
+        printf("\n");
     }
 }
 
