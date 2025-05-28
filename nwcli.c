@@ -37,6 +37,41 @@ show_nw_topology_handler(param_t *param, ser_buff_t *tlv_buf, op_mode enable_or_
     return 0;
 }
 
+extern void dump_node_interface_stats(node_t * node);
+static int show_interface_handler(param_t *param, ser_buff_t *tlv_buf, op_mode enable_or_disable){
+    
+    int CMDCODE;
+    node_t *node;
+    char *node_name;
+    char *protocol_name = NULL;
+
+    CMDCODE = EXTRACT_CMD_CODE(tlv_buf);
+
+    tlv_struct_t *tlv = NULL;
+
+    TLV_LOOP_BEGIN(tlv_buf, tlv){
+
+        if(strncmp(tlv->leaf_id, "node-name", strlen("node-name")) ==0)
+            node_name = tlv->value;
+        else if(strncmp(tlv->leaf_id, "protocol-name", strlen("protocol-name")) ==0)
+            protocol_name = tlv->value;        
+        else
+            assert(0);
+    } TLV_LOOP_END;
+   
+    node = get_node_by_node_name(topo, node_name);
+
+    switch(CMDCODE){
+
+        case CMDCODE_SHOW_INTF_STATS:
+            dump_node_interface_stats(node);
+            break;
+        default:
+            ;
+    }
+    return 0;
+}
+
 extern void send_arp_broadcast_request(node_t *node, interface_t *oif, char * ip_addr);
 static int arp_handler(param_t *param, ser_buff_t *tlv_buf, op_mode enable_or_disable)
 {
@@ -241,15 +276,15 @@ l3_config_handler(param_t *param, ser_buff_t *tlv_buf, op_mode enable_or_disable
     
     TLV_LOOP_BEGIN(tlv_buf, tlv){
 
-        if     (strncmp(tlv->leaf_id, "node-name", strlen("node-name")) ==0)
+        if(strncmp(tlv->leaf_id, "node-name", strlen("node-name")) == 0U)
             node_name = tlv->value;
-        else if(strncmp(tlv->leaf_id, "ip-address", strlen("ip-address")) ==0)
+        else if(strncmp(tlv->leaf_id, "ip-address", strlen("ip-address")) == 0U)
             dest = tlv->value;
-        else if(strncmp(tlv->leaf_id, "gw-ip", strlen("gw-ip")) ==0)
+        else if(strncmp(tlv->leaf_id, "gw-ip", strlen("gw-ip")) == 0U)
             gwip = tlv->value;
-        else if(strncmp(tlv->leaf_id, "mask", strlen("mask")) ==0)
+        else if(strncmp(tlv->leaf_id, "mask", strlen("mask")) == 0U)
             mask_str = tlv->value;
-        else if(strncmp(tlv->leaf_id, "oif", strlen("oif")) ==0)
+        else if(strncmp(tlv->leaf_id, "oif", strlen("oif")) == 0U)
             intf_name = tlv->value;
         else
             assert(0);
@@ -308,19 +343,18 @@ static int intf_config_handler(param_t *param, ser_buff_t *tlv_buf, op_mode enab
 
     char *l2_mode_option;
     uint32_t intf_new_metric_val;
+    uint32_t vlan_id;
 
     CMDCODE = EXTRACT_CMD_CODE(tlv_buf);
 
     TLV_LOOP_BEGIN(tlv_buf, tlv){
-        if(strncmp(tlv->leaf_id, 'node-name', strlen("node-name")) == 0U){
+
+        if(strncmp(tlv->leaf_id, "node-name", strlen("node-name")) ==0)
             node_name = tlv->value;
-        }
-        else if(strncmp(tlv->leaf_id, "if-name", strlen("if-str")) == 0U){
+        else if(strncmp(tlv->leaf_id, "if-name", strlen("if-name")) ==0)
             intf_name = tlv->value;
-        }
-        else if(strncmp(tlv->leaf_id, "vlan-id", strlen("vlan-id")) == 0U){
-            intf_name = atoi(tlv->value);
-        }
+        else if(strncmp(tlv->leaf_id, "vlan-id", strlen("vlan-d")) ==0)
+            vlan_id = atoi(tlv->value);
         else if(strncmp(tlv->leaf_id, "l2-mode-val", strlen("l2-mode-val")) == 0)
             l2_mode_option = tlv->value;
         else if(strncmp(tlv->leaf_id, "if-up-down", strlen("if-up-down")) == 0)
@@ -329,9 +363,10 @@ static int intf_config_handler(param_t *param, ser_buff_t *tlv_buf, op_mode enab
              intf_new_metric_val = atoi(tlv->value);            
         else
             assert(0);
-    }TLV_LOOP_END;
 
-    node = get_node_by_node_name(topo,node_name);
+    } TLV_LOOP_END;
+
+    node = get_node_by_node_name(topo, node_name);
     interface = get_node_intf_by_name(node, intf_name);
     if(!interface){
         printf("%s: Interface %s does not exist\n", __FUNCTION__, intf_name);
@@ -360,6 +395,8 @@ static int intf_config_handler(param_t *param, ser_buff_t *tlv_buf, op_mode enab
             }
             break;
         }
+        default:
+            ;
     }
 }
 
@@ -412,7 +449,23 @@ void nw_init_cli(void)
                     init_param(&rt, CMD, "rt", show_rt_handler, 0, INVALID, 0, "Dump L3 Routing Table");
                     libcli_register_param(&node_name, &rt);
                     set_param_cmd_code(&rt, CMDCODE_SHOW_NODE_RT_TABLE);
-                }                
+                }
+                {
+                    /* show node <node_name> interface */
+                    static param_t interface;
+                    init_param(&interface, CMD, "interface", 0, 0, INVALID, 0, "\"interface\" keyword");
+                    libcli_register_param(&node_name, &interface);
+                    {
+                        /* show node <node_name> interface statistics */
+                        static param_t stats;
+                        init_param(&stats, CMD, "statistics", show_interface_handler, 0, INVALID, 0, "Interface Statistics");
+                        libcli_register_param(&interface, &stats);
+                        set_param_cmd_code(&stats, CMDCODE_SHOW_INTF_STATS);
+                        {
+                            /* show node <node_name> interface statistics protocol */
+                        }
+                    }
+                }             
             }
         }
     }
@@ -493,7 +546,7 @@ void nw_init_cli(void)
                         /* config node <node_name> interface <if_name> <up|down> */
                         {
                             static param_t if_up_down_status;
-                            init_param(&if_up_down_status, LEAF, 0, intf_config_handler, validate_if_up_down_status, STRING, "if-up-down", "<up|down>");
+                            init_param(&if_up_down_status, LEAF, 0, intf_config_handler, validate_if_up_down_status, STRING, "if-up-down", "<up | down>");
                             libcli_register_param(&if_name, &if_up_down_status);
                             set_param_cmd_code(&if_up_down_status, CMDCODE_CONF_INTF_UP_DOWN);
                         }

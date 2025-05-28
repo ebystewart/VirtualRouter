@@ -55,17 +55,23 @@ typedef struct node_nw_prop_{
 }node_nw_prop_t;
 
 typedef struct intf_nw_prop_{
+    /* L1 Properties */
+    bool_t is_up;
+
     /* L2 Properties */
     mac_add_t mac_addr;
     intf_l2_mode_t intf_l2_mode;
-    bool_t is_up;
     unsigned int vlans[MAX_VLAN_MEMBERSHIP];
 
     /* L3 Properties */
-    bool_t is_apaddr_config_prev; /* a Marker to know if an IP address is previously configured, but removed to operate in L2 mode */
+    bool_t is_ipaddr_config_backup; /* a Marker to know if an IP address is previously configured, but removed to operate in L2 mode */
     bool_t is_ipaddr_config;
     ip_add_t ip_addr;
     char mask;
+
+    /* Interface Statistics */
+    uint32_t pkt_recv;
+    uint32_t pkt_sent;
 }intf_nw_prop_t;
 
 static inline void init_node_nw_prop(node_nw_prop_t *node_nw_prop);
@@ -86,10 +92,23 @@ static inline void init_node_nw_prop(node_nw_prop_t *node_nw_prop)
 
 static inline void init_intf_nw_prop(intf_nw_prop_t *intf_nw_prop)
 {
+    /* L1 propoerties */
+    intf_nw_prop->is_up = TRUE;
+
+    /* L2 Propoerties */
     memset(&intf_nw_prop->mac_addr.mac_addr, 0, 6);
     intf_nw_prop->is_ipaddr_config = FALSE;
     memset(&intf_nw_prop->ip_addr.ip_addr, 0, 16);
     intf_nw_prop->mask = 0U;
+
+    /* L3 properties */
+    intf_nw_prop->is_ipaddr_config = FALSE;
+    memset(&intf_nw_prop->ip_addr.ip_addr, 0, 16);
+    intf_nw_prop->mask = 0U;
+
+    /* Interface statistics */
+    intf_nw_prop->pkt_recv = 0U;
+    intf_nw_prop->pkt_sent = 0U;
 }
 
 #define IF_IS_UP(intf_ptr) ((intf_ptr)->intf_nw_prop.is_up == TRUE)
@@ -112,6 +131,8 @@ bool_t node_unset_intf_ip_address(node_t *node, char *local_if);
 void dump_nw_graph(graph_t *graph);
 void dump_node_nw_props(node_t *node);
 void dump_intf_props(interface_t *interface);
+void dump_node_interface_stats(node_t *node);
+void dump_interface_stats(interface_t *interface);
 
 char *pkt_buffer_shift_right(char *pkt, unsigned int pkt_size, unsigned int total_buffer_size);
 

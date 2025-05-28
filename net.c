@@ -126,6 +126,26 @@ void dump_intf_props(interface_t *interface)
     }
 }
 
+void dump_node_interface_stats(node_t *node)
+{
+    interface_t *interface;
+    uint8_t idx;
+
+    for(idx = 0U; idx < MAX_IF_PER_NODE; idx++){
+        interface = node->intf[idx];
+        if(!interface)
+            return;
+        dump_interface_stats(interface);
+    }
+}
+
+void dump_interface_stats(interface_t *interface)
+{
+    printf("\t%s\n", interface->if_name);
+    printf("\tTx Statistics: %u\n", interface->intf_nw_prop.pkt_sent);
+    printf("\tRx Statistics: %u\n", interface->intf_nw_prop.pkt_recv);
+}
+
 char *pkt_buffer_shift_right(char *pkt, unsigned int pkt_size, unsigned int total_buffer_size)
 {
     char *dest;

@@ -63,7 +63,8 @@ static void _pkt_receive(node_t *receiving_node, char *pkt_with_aux_data, unsign
     if(!IF_IS_UP(recv_intf)){
         return;
     }
-    
+    recv_intf->intf_nw_prop.pkt_recv++;
+
     /* Right align the received data */
     char *pkt = pkt_buffer_shift_right((pkt_with_aux_data + IF_NAME_SIZE), (pkt_size - IF_NAME_SIZE), (MAX_RECEIVE_BUFFER_SIZE-IF_NAME_SIZE));
 
@@ -157,6 +158,10 @@ int send_pkt_out(char *pkt, unsigned int pkt_size, interface_t *interface)
 
     interface_t *other_interface = &interface->link->intf1 == interface ? &interface->link->intf2 : &interface->link->intf1;
 
+    if(!IF_IS_UP(interface)){
+        return 0;
+    }
+
     if(!nbr_node)
         return -1;
     unsigned int dst_udp_port_no = nbr_node->udp_port_number;
@@ -173,7 +178,13 @@ int send_pkt_out(char *pkt, unsigned int pkt_size, interface_t *interface)
     memcpy(pkt_with_aux_data + IF_NAME_SIZE, pkt, pkt_size);
 
     rc = _send_pkt_out(sock_fd, pkt_with_aux_data, pkt_size + IF_NAME_SIZE, dst_udp_port_no);
-
     close(sock_fd);
+
+    if(rc > 0U){
+        interface->intf_nw_prop.pkt_sent++;   
+    }
+    else{
+        printf("%s: Error - Pkt send failed on node %s with error code %d\n", __FUNCTION__, sending_node->node_name, errno);
+    }
     return rc;
 }

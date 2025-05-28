@@ -12,7 +12,8 @@
 #define CMDCODE_SHOW_NODE_RT_TABLE  9   /*show node <node-name> rt*/
 #define CMDCODE_CONF_NODE_L3ROUTE   10  /*config node <node-name> route <ip-address> <mask> [<gw-ip> <oif>]*/
 #define CMDCODE_ERO_PING            11  /*run <node-name> ping <ip-address> ero <ero-ip-address>*/
-
+#define CMDCODE_UNUSED_1            12  /*Not used*/
+#define CMDCODE_SHOW_INTF_STATS     13  /*show node <node-name> interface statistics*/
 
 /*Interface Up Down*/ 
 #define CMDCODE_CONF_INTF_UP_DOWN        26 /*config node <node-name> interface <if-name> <up|down> */

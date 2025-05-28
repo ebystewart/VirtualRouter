@@ -34,7 +34,7 @@ void interface_set_l2_mode(node_t *node, interface_t *interface, char *l2_mode_o
     disable the IP address and configured interface to L2 mode */
     if(IS_INTF_L3_MODE(interface)){
         interface->intf_nw_prop.is_ipaddr_config = FALSE;
-        interface->intf_nw_prop.is_apaddr_config_prev = TRUE;
+        interface->intf_nw_prop.is_ipaddr_config_backup = TRUE;
         IF_L2_MODE(interface) = intf_l2_mode;
         return;
     }
