@@ -1,11 +1,11 @@
 CC=gcc
 CFLAGS=-g
-TARGET:test.exe
+TARGET:VirtualRouter.exe CommandParser/libcli.a
 LIBS=-lpthread -L ./CommandParser -lcli 
 OBJS=glueThread/glthread.o	\
 		graph.o				\
 		topologies.o		\
-		testapp.o			\
+		main.o			\
 		net.o				\
 		nwcli.o				\
 		comm.o				\
@@ -18,11 +18,11 @@ OBJS=glueThread/glthread.o	\
 		Layer5/ping.o		\
 		tcpip_notif.o	
 
-test.exe:${OBJS} CommandParser/libcli.a
-	${CC} ${CFLAGS} ${OBJS} -o test.exe ${LIBS}
+VirtualRouter.exe:${OBJS} CommandParser/libcli.a
+	${CC} ${CFLAGS} ${OBJS} -o VirtualRouter.exe ${LIBS}
 
-testapp.o:testapp.c
-	${CC} ${CFLAGS} -c testapp.c -I . -o testapp.o
+main.o:main.c
+	${CC} ${CFLAGS} -c main.c -I . -o main.o
 
 glueThread/glthread.o:glueThread/glthread.c
 	${CC} ${CFLAGS} -c glueThread/glthread.c -I glueThread -o glueThread/glthread.o 

@@ -226,6 +226,7 @@ l2_forward_ip_packet(node_t *node, unsigned int next_hop_ip, char *outgoing_intf
             /* Time for ARP resolution */
             printf("%s: Info - ARP entry doesn't exist. create a sane entry\n", __FUNCTION__);
             arp_entry = create_arp_sane_entry(NODE_ARP_TABLE(node), next_hop_ip_str);
+            printf("%s: Info - Sane ARP entry created @ %x\n", __FUNCTION__, arp_entry);
             add_arp_pending_entry(arp_entry, pending_arp_processing_callback_function, (char *)pkt, pkt_size);
             send_arp_broadcast_request(node, oif, next_hop_ip_str);
             return;
@@ -513,6 +514,7 @@ arp_entry_t *create_arp_sane_entry(arp_table_t *arp_table, char *ip_addr)
             /* No need to create ARP sane entry when ARP complete entry is already available */
             assert(0);
         }
+        printf("%s: Info - Existing ARP sane entry found\n",__FUNCTION__);
         return arp_entry;
     }
     /* If ARP entry does not exist, create a new sane entry */

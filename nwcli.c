@@ -218,7 +218,7 @@ static int ping_handler(param_t *param, ser_buff_t *tlv_buf, op_mode enable_or_d
  
     TLV_LOOP_BEGIN(tlv_buf, tlv){
 
-        if     (strncmp(tlv->leaf_id, "node-name", strlen("node-name")) ==0)
+        if(strncmp(tlv->leaf_id, "node-name", strlen("node-name")) ==0)
             node_name = tlv->value;
         else if(strncmp(tlv->leaf_id, "ip-address", strlen("ip-address")) ==0)
             ip_addr = tlv->value;

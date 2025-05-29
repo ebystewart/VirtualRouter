@@ -294,6 +294,9 @@ cd
 conf node R2 route 122.1.1.3 32 20.1.1.2 eth0/2
 run node R1 ping 122.1.1.3
 
+conf node R4 route 122.1.1.3 32 30.1.1.1 eth0/5
+run node R1 ping 122.1.1.3 ero 122.1.1.4
+
 
 #endif
 

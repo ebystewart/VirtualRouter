@@ -30,5 +30,5 @@ typedef struct ip_hdr_{
 #define IP_PKT_PAYLOAD_PTR(ip_hdr_ptr)        ((char *)(ip_hdr_ptr + IP_HDR_LEN_IN_BYTES(ip_hdr_ptr)))
 #define IP_PKT_PAYLOAD_SIZE(ip_hdr_ptr)       (IP_PKT_TOTAL_LEN_IN_BYTES(ip_hdr_ptr) - IP_HDR_LEN_IN_BYTES(ip_hdr_ptr))
 
-
+void initialize_ip_pkt(ip_hdr_t *ip_hdr);
 #endif //IP_H

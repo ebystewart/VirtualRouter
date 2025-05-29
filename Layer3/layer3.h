@@ -4,10 +4,10 @@
 #include <stdint.h>
 #include <string.h>
 #include "../glueThread/glthread.h"
-#include "graph.h"
-#include "net.h"
+#include "../graph.h"
+#include "../net.h"
 #include "../Layer2/layer2.h"
-#include "utils.h"
+#include "../utils.h"
 
 typedef struct rt_table_{
     glthread_t route_list;
