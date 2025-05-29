@@ -1,6 +1,6 @@
 CC=gcc
 CFLAGS=-g
-TARGET:VirtualRouter.exe CommandParser/libcli.a
+TARGET:VirtualRouter.exe CommandParser/libcli.a pkt_gen.exe
 LIBS=-lpthread -L ./CommandParser -lcli 
 OBJS=glueThread/glthread.o	\
 		graph.o				\
@@ -20,6 +20,12 @@ OBJS=glueThread/glthread.o	\
 
 VirtualRouter.exe:${OBJS} CommandParser/libcli.a
 	${CC} ${CFLAGS} ${OBJS} -o VirtualRouter.exe ${LIBS}
+
+pkt_gen.exe:pkt_gen.o utils.o
+	$(CC) $(CFLAGS) -I tcp_public.h pkt_gen.o utils.o Layer3/ip.o -o pkt_gen.exe
+
+pkt_gen.o:pkt_gen.c
+	$(CC) $(CFLAGS) -c pkt_gen.c -I . -I Layer3 -o pkt_gen.o
 
 main.o:main.c
 	${CC} ${CFLAGS} -c main.c -I . -o main.o

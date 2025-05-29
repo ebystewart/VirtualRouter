@@ -41,10 +41,13 @@ int main(int argc, char **argv)
     SET_COMMON_ETH_FCS(eth_pkt, 20U, 0); //set FCS=0 after 20 Bytes payload; 20 Bytes being basic IP pkt size
 
     /* Prepare pseudo Ip header */
+    uint32_t dst_ip_int;
     ip_hdr_t *ip_hdr = (ip_hdr_t *)(eth_pkt->payload);
     initialize_ip_pkt(ip_hdr);
     ip_hdr->protocol = ICMP_PRO;
-    ip_hdr->dst_ip = ip_addr_p_to_n(DEST_IP_ADDR);
+    inet_pton(AF_INET, DEST_IP_ADDR, &dst_ip_int);
+    dst_ip_int = htonl(dst_ip_int);
+    ip_hdr->dst_ip = dst_ip_int;
 
     totalDataLen = ETH_HDR_SIZE_EXCL_PAYLOAD + 20U + IF_NAME_SIZE;
 
