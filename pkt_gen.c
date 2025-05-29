@@ -4,7 +4,7 @@
 #include <errno.h>
 #include <netdb.h> /*for struct hostent*/
 
-#define INGRESS_INTF_NAME "eth0/1"
+#define INGRESS_INTF_NAME "eth0/7"
 #define DEST_IP_ADDR "122.1.1.3"
 #define SRC_NODE_UDP_PORT_NO 40000
 
@@ -55,8 +55,8 @@ int main(int argc, char **argv)
     {
         rc = sendto(udp_sock_fd, send_buffer, totalDataLen, 0U, (struct sockaddr *)&dest_addr, sizeof(struct sockaddr));
         nPktsSent++;
-        printf("%s: No. of Bytes sent - %d, Pkt Number %d\n", rc, nPktsSent);
-        usleep(100000); /* 10 pkts/sec */
+        printf("%s: No. of Bytes sent - %d, Pkt Number %d\n", __FUNCTION__, rc, nPktsSent);
+        usleep(2000000); /* 10 pkts/sec */
     }
     close(udp_sock_fd);
     return 0;
