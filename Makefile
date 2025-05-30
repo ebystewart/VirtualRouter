@@ -85,6 +85,7 @@ clean:
 	rm Layer2/*.o
 	rm Layer3/*.o
 	rm Layer5/*.o
+	rm Layer5/spf_algo/*.o	
 	rm *.exe
 	(cd CommandParser; make clean)
 

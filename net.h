@@ -115,6 +115,7 @@ static inline void init_intf_nw_prop(intf_nw_prop_t *intf_nw_prop)
 
 #define IF_MAC(intf_ptr) ((intf_ptr)->intf_nw_prop.mac_addr.mac_addr)
 #define IF_IP(intf_ptr)  ((intf_ptr)->intf_nw_prop.ip_addr.ip_addr)
+#define IF_MASK(intf_ptr) ((intf_ptr)->intf_nw_prop.mask)
 #define NODE_LO_ADDRESS(node_ptr)  ((node_ptr)->node_nw_prop.lb_addr.ip_addr)
 #define NODE_ARP_TABLE(node_ptr)   ((node_ptr)->node_nw_prop.arp_table)
 #define NODE_MAC_TABLE(node_ptr)   ((node_ptr)->node_nw_prop.mac_table)
@@ -146,6 +147,9 @@ bool_t is_trunk_intf_vlan_enabled(interface_t *interface, unsigned int vlan_id);
 
 /* Can only be used for intf in ACCESS mode */
 unsigned int get_access_intf_operating_vlan_id(interface_t *interface);
+
+bool_t is_interface_l3_bidirectional(interface_t *interface);
+bool_t is_same_subnet(char *ip_addr, uint16_t mask, char *ip_to_compare);
 
 static inline char *intf_l2_mode_str(intf_l2_mode_t intf_l2_mode)
 {

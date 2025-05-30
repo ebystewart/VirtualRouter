@@ -4,6 +4,23 @@
 
 extern graph_t *topo;
 
+typedef struct spf_data_{
+    node_t *node;
+    glthread_t spf_result_head;
+    /* fileds use for spf calculation */
+    uint32_t spf_metric;
+    glthread_t priority_thread_glue;
+    nexthop_t *nexthops[MAX_NXT_HOPS];
+}spf_data_t;
+
+GLTHREAD_TO_STRUCT(priority_thread_glue_to_spf_data, spf_data_t, priority_thread_glue);
+
+typedef struct spf_result_{
+    node_t *node;
+    uint32_t spf_metric;
+    nexthop_t *nexthops[MAX_NXT_HOPS];
+    glthread_t spf_result_glue;
+}spf_result_t;
 
 void compute_spf(node_t *spf_root)
 {
@@ -49,4 +66,30 @@ int spf_algo_handler(param_t *param, ser_buff_t *tlv_buf, op_mode enable_or_disa
             break;
     }
     return 0;
+}
+
+void spf_flush_nexthops(nexthop_t **nexthop)
+{
+    uint32_t idx = 0U;
+
+    if(!nexthop)
+        return;
+
+    for( ; idx < MAX_NXT_HOPS; idx++){
+        if(nexthop[idx]){
+            assert(nexthop[idx]->ref_count);
+            nexthop[idx]->ref_count--;
+            if(nexthop[idx]->ref_count == 0U){
+                free(nexthop[idx]);
+            }
+            nexthop[idx] = NULL;
+        }
+    }
+}
+
+static inline void free_spf_result(spf_result_t *spf_result)
+{
+    spf_flush_nexthops(spf_result->nexthops);
+    remove_glthread(&spf_result->spf_result_glue);
+    free(spf_result);
 }

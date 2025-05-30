@@ -8,17 +8,26 @@
 #include "../net.h"
 #include "../Layer2/layer2.h"
 #include "../utils.h"
+#include "../tcpconst.h"
 
 typedef struct rt_table_{
     glthread_t route_list;
 }rt_table_t;
+
+typedef struct nexthop_{
+    char gw_ip[16];      // next hop ip
+    char oif[IF_NAME_SIZE];   // outgoing interface name
+    uint32_t ref_count;
+}nexthop_t;
 
 typedef struct l3_route_{
     char dest_ip[16];    //key
     char mask_dest_ip;   //key
     bool_t is_direct;    // if set to TRUE, gw_ip and oif is not relevant
     char gw_ip[16];      // next hop ip
-    char oif[IF_NAME_SIZE];   // out interface name
+    char oif[IF_NAME_SIZE];   // outgoing interface name
+    nexthop_t *nexthops[MAX_NXT_HOPS];
+    uint32_t nxthop_idx;
     glthread_t rt_glue;
 }l3_route_t;
 

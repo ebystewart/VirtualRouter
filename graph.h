@@ -30,12 +30,15 @@ struct link_{
     unsigned int cost;
 };
 
+typedef struct spf_data_ spf_data_t;
 struct node_{
     char node_name[NODE_NAME_SIZE];
     interface_t *intf[MAX_IF_PER_NODE];
     unsigned int udp_port_number;
     int udp_sock_fd;
     node_nw_prop_t node_nw_prop;
+    /* SPF calculation */
+    spf_data_t *spf_data;
     glthread_t graph_glue;
 };
 

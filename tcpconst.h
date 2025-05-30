@@ -15,5 +15,6 @@
 #define VLAN_8021Q_PROTO    0x8100
 #define IP_IN_IP        4
 
+#define MAX_NXT_HOPS        4
 
 #endif

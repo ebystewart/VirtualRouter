@@ -239,3 +239,61 @@ bool_t is_trunk_intf_vlan_enabled(interface_t *interface, unsigned int vlan_id)
     }
     return FALSE;
 }
+
+/* SPF related */
+bool_t is_interface_l3_bidirectional(interface_t *interface)
+{
+    interface_t *neighbour_intf;
+
+    /* The current interface and its neighbour interface should be UP */
+    neighbour_intf = &interface->link->intf1 == interface ? &interface->link->intf2 : &interface->link->intf1;
+    if(!neighbour_intf)
+        return FALSE;
+
+    if(!IF_IS_UP(interface) || !IF_IS_UP(neighbour_intf))
+        return FALSE;
+    
+    /* The current interface and its neighbour interface are not operating in L2 mode */
+    if(IF_L2_MODE(interface) == ACCESS || IF_L2_MODE(neighbour_intf) == ACCESS)
+        return FALSE;
+    
+    if(IF_L2_MODE(interface) == TRUNK || IF_L2_MODE(neighbour_intf) == TRUNK)
+        return FALSE;
+
+    /* The current interface and its neighbour interface are configured with IP addresses */
+    if(!IS_INTF_L3_MODE(interface) || !IS_INTF_L3_MODE(neighbour_intf))
+        return FALSE;
+
+    /* The current interface and its neighbour interface should be in the same subnet */
+    if(!is_same_subnet(IF_IP(interface), IF_MASK(interface), IF_IP(neighbour_intf)))
+        return FALSE;
+
+    if(!is_same_subnet(IF_IP(neighbour_intf), IF_MASK(neighbour_intf), IF_IP(interface)))
+        return FALSE;
+
+    return TRUE;
+}
+
+bool_t is_same_subnet(char *ip_addr, uint16_t mask, char *ip_to_compare)
+{
+    uint32_t ip_addr_int;
+    uint32_t ip_to_compare_int;
+    uint32_t count = 0U;
+    uint32_t idx = 31U;
+
+    inet_pton(AF_INET, ip_addr, &ip_addr_int);
+    ip_addr_int = htonl(ip_addr_int);
+    inet_pton(AF_INET, ip_to_compare, &ip_to_compare_int);
+    ip_to_compare_int = htonl(ip_to_compare_int);
+
+    for(idx = 31U; idx >= 0U; idx--){
+        if (((ip_addr_int >> idx) & 1U) == ((ip_to_compare_int >> idx) & 1U))
+        {
+            count++;
+        }
+    }
+    if(count != mask)
+        return FALSE;
+        
+    return TRUE;
+}
