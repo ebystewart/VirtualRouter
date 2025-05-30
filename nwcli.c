@@ -400,6 +400,8 @@ static int intf_config_handler(param_t *param, ser_buff_t *tlv_buf, op_mode enab
     }
 }
 
+extern int spf_algo_handler(param_t param, ser_buff_t *tlv_buf, op_mode enable_or_disable);
+
 void nw_init_cli(void)
 {
     init_libcli();
@@ -465,7 +467,14 @@ void nw_init_cli(void)
                             /* show node <node_name> interface statistics protocol */
                         }
                     }
-                }             
+                }
+                {
+                    /*show node <node-name> spf-result*/
+                    static param_t spf_result;
+                    init_param(&spf_result, CMD, "spf-result", spf_algo_handler, 0, INVALID, 0, "SPF Results");
+                    libcli_register_param(&node_name, &spf_result);
+                    set_param_cmd_code(&spf_result, CMDCODE_SHOW_SPF_RESULTS);
+                 }           
             }
         }
     }
@@ -516,6 +525,12 @@ void nw_init_cli(void)
                     libcli_register_param(&resolve_arp, &ip_addr);
                     set_param_cmd_code(&ip_addr, CMDCODE_RUN_ARP);
                 }
+
+                /* run node <node_name> spf */
+                static param_t spf;
+                init_param(&spf, CMD, "spf", spf_algo_handler, 0, INVALID, 0, "Trigger spf");
+                libcli_register_param(&node_name, &spf);
+                set_param_cmd_code(&spf, CMDCODE_RUN_SPF);
             }
         }
     }

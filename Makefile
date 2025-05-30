@@ -15,6 +15,7 @@ OBJS=glueThread/glthread.o	\
 		Layer3/layer3.o		\
 		Layer3/ip.o		    \
 		Layer5/layer5.o		\
+		Layer5/spf_algo/spf.o		\
 		Layer5/ping.o		\
 		tcpip_notif.o	
 
@@ -70,7 +71,10 @@ Layer5/ping.o:Layer5/ping.c
 	${CC} ${CFLAGS} -c Layer5/ping.c -I . -o Layer5/ping.o	
 
 Layer5/layer5.o:Layer5/layer5.c
-	${CC} ${CFLAGS} -c Layer5/layer5.c -I . -o Layer5/layer5.o	
+	${CC} ${CFLAGS} -c Layer5/layer5.c -I . -o Layer5/layer5.o
+
+Layer5/spf_algo/spf.o:Layer5/spf_algo/spf.c
+	${CC} ${CFLAGS} -c Layer5/spf_algo/spf.c -I . -o Layer5/spf_algo/spf.o		
 
 CommandParser/libcli.a:
 	(cd CommandParser; make)
