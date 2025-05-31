@@ -8,19 +8,19 @@ typedef struct glthread_{
 
 void init_glthread(glthread_t *glthread);
 
-void glthread_add_next(glthread_t *base_glthread, glthread_t *new_glthread);
+void glthread_add_next(glthread_t *curr_glthread, glthread_t *new_glthread);
 
-void glthread_add_before(glthread_t *base_glthread, glthread_t *new_glthread);
+void glthread_add_before(glthread_t *curr_glthread, glthread_t *new_glthread);
 
-void glthread_add_last(glthread_t *base_thread, glthread_t *new_glthread);
+void glthread_add_last(glthread_t *glthread_head, glthread_t *new_glthread);
 
 void remove_glthread(glthread_t *glthread);
 
-void delete_glthread_list(glthread_t *base_glthread);
+void delete_glthread_list(glthread_t *glthread_head);
 
-unsigned int get_glthread_list_count(glthread_t *base_glthread);
+unsigned int get_glthread_list_count(glthread_t *glthread_head);
 
-void glthread_priority_insert(glthread_t *base_glthread, glthread_t *glthread,
+void glthread_priority_insert(glthread_t *glthread_head, glthread_t *glthread,
                                 int (*comp_fn)(void *, void *), int count);
 
 

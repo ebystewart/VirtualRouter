@@ -16,9 +16,11 @@ typedef struct rt_table_{
 
 typedef struct nexthop_{
     char gw_ip[16];      // next hop ip
-    char oif[IF_NAME_SIZE];   // outgoing interface name
+    interface_t *oif;   // outgoing interface
     uint32_t ref_count;
 }nexthop_t;
+
+#define nexthop_node_name(nexthop_ptr) ((get_nbr_node(nexthop_ptr->oif))->node_name)
 
 typedef struct l3_route_{
     char dest_ip[16];    //key
@@ -27,6 +29,7 @@ typedef struct l3_route_{
     char gw_ip[16];      // next hop ip
     char oif[IF_NAME_SIZE];   // outgoing interface name
     nexthop_t *nexthops[MAX_NXT_HOPS];
+    uint32_t spf_metric;
     uint32_t nxthop_idx;
     glthread_t rt_glue;
 }l3_route_t;
