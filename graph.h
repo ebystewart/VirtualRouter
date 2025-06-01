@@ -122,4 +122,9 @@ static inline node_t *get_node_by_node_name(graph_t *topo, char *node_name)
     return NULL;
 }
 
+static inline uint32_t get_link_cost(interface_t *interface)
+{
+    return interface->link->cost;
+}
+
 #endif //GRAPH_H

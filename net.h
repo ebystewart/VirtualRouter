@@ -123,6 +123,25 @@ static inline void init_intf_nw_prop(intf_nw_prop_t *intf_nw_prop)
 #define IS_INTF_L3_MODE(intf_ptr)  ((intf_ptr)->intf_nw_prop.is_ipaddr_config)
 #define IF_L2_MODE(intf_ptr)       ((intf_ptr)->intf_nw_prop.intf_l2_mode)
 
+/* macro to iterate over neighbours of a node */
+/* Here oif and ip_addr_ptr(gw_ip) are outward pointers */
+#define ITERATE_NODE_NBRS_BEGIN(node_ptr, nbr_ptr, oif_ptr, ip_addr_ptr)    \
+    do{                                                                     \
+        uint8_t idx = 0U;                                                   \
+        interface_t *other_intf;                                            \
+        for(idx = 0U; idx < MAX_IF_PER_NODE; idx++){                        \
+            oif_ptr = node_ptr->intf[idx];                                  \
+            if(!oif_ptr)                                                    \
+                continue;                                                   \
+            other_intf = &oif_ptr->link->intf1 == oif_ptr ?                 \
+            &oif_ptr->link->intf2 : &oif_ptr->link->intf1;                  \
+            if(!other_intf)                                                 \
+                continue;                                                   \
+            nbr_ptr = get_nbr_node(oif_ptr);                                \
+            ip_addr_ptr = IF_IP(other_intf);                                \
+
+#define ITERATE_NODE_NBRS_END(node_ptr, nbr_ptr, oif_ptr, ip_addr_ptr) }}while(0);
+
 /* APIs to set network properties to nodes and interfaces */
 void interface_assign_mac_address(interface_t *interface);
 bool_t node_set_loopback_address(node_t *node, char *ip_addr);
