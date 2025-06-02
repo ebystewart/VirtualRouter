@@ -128,6 +128,7 @@ arp_entry_t *arp_table_lookup(arp_table_t *arp_table, char *ip_addr);
 void arp_table_update_from_arp_reply(arp_table_t *arp_table, arp_packet_t *arp_pkt, interface_t *iif);
 void delete_arp_table_entry(arp_table_t *arp_table, char *ip_addr);
 void dump_arp_table(arp_table_t *arp_table);
+void delete_arp_entry(arp_entry_t *arp_entry);
 void send_arp_broadcast_request(node_t *node, interface_t *oif, char * ip_addr);
 void dump_eth_frame(ethernet_frame_t *eth_pkt, char *msg);
 

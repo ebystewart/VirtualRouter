@@ -30,6 +30,7 @@ typedef struct spf_result_{
 GLTHREAD_TO_STRUCT(spf_result_glue_to_spf_result, spf_result_t, spf_result_glue);
 
 static void compute_spf(node_t *spf_root);
+static void compute_spf_all_routers(graph_t *topo);
 static int spf_comparison_fn(void *data1, void *data2);
 static int spf_install_routes(node_t *spf_root);
 static void spf_record_result(node_t *spf_root, node_t *processed_node);
@@ -37,7 +38,36 @@ static void spf_explore_nbrs(node_t *spf_root, node_t *curr_node, glthread_t *pr
 
 static void show_spf_results(node_t *node)
 {
-    printf("%s: called\n", __FUNCTION__);
+    int i = 0;
+    int j = 0;
+
+    glthread_t *curr;
+    spf_result_t *spf_result = NULL;
+    interface_t *oif = NULL;
+
+    printf("SPF run results ofr node %s\n", node->node_name);
+
+    ITERATE_GLTHREAD_BEGIN(&node->spf_data->spf_result_head, curr){
+        spf_result = spf_result_glue_to_spf_result(curr);
+        printf("DEST: %-10s, spf_metric: %-6u\n", spf_result->node->node_name, spf_result->spf_metric);
+        printf("Nxt hop:");
+
+        j = 0;
+        for(i = 0; i < MAX_NXT_HOPS; i++, j++){
+            if(!spf_result->nexthops[i])
+                continue;
+            oif = spf_result->nexthops[i]->oif;
+            if(j == 0){
+                printf("%-8s    OIF: %-7s   gateway: %-16s  ref_count: %u\n", nexthop_node_name(spf_result->nexthops[i]),\
+                        oif->if_name, spf_result->nexthops[i]->gw_ip, spf_result->nexthops[i]->ref_count);
+            }
+            else{
+                printf("                                        :"
+                       "%-8s    OIF: %-7s   gateway: %-16s  ref_count: %u\n", nexthop_node_name(spf_result->nexthops[i]),\
+                        oif->if_name, spf_result->nexthops[i]->gw_ip, spf_result->nexthops[i]->ref_count);
+            }
+        }
+    }ITERATE_GLTHREAD_END(&node->spf_data->spf_result_head, curr);
 }
 
 int spf_algo_handler(param_t *param, ser_buff_t *tlv_buf, op_mode enable_or_disable)
@@ -68,6 +98,11 @@ int spf_algo_handler(param_t *param, ser_buff_t *tlv_buf, op_mode enable_or_disa
         case CMDCODE_RUN_SPF:
         {
             compute_spf(node);
+            break;
+        }
+        case CMDCODE_RUN_SPF_ALL:
+        {
+            compute_spf_all_routers(topo);
             break;
         }
         default:
@@ -298,6 +333,17 @@ static void compute_spf(node_t *spf_root)
     int count = spf_install_routes(spf_root);
 }
 
+static void compute_spf_all_routers(graph_t *topo)
+{
+    glthread_t *curr;
+    node_t *node;
+
+    ITERATE_GLTHREAD_BEGIN(&topo->node_list, curr){
+        node = graph_glue_to_node(curr);
+        compute_spf(node);
+    }ITERATE_GLTHREAD_END(&topo->node_list, curr);
+}
+
 static int spf_install_routes(node_t *spf_root)
 {
     rt_table_t *rt_table = NODE_RT_TABLE(spf_root);
@@ -318,7 +364,7 @@ static int spf_install_routes(node_t *spf_root)
             nexthop = spf_result->nexthops[i];
             if(!nexthop)
                 continue;
-            //rt_table_add_route(rt_table, NODE_LO_ADDRESS(spf_result->node), 32U, nexthop->gw_ip, nexthop->oif, spf_result->spf_metric);
+            rt_table_add_route(rt_table, NODE_LO_ADDRESS(spf_result->node), 32U, nexthop->gw_ip, nexthop->oif, spf_result->spf_metric);
             count++;
         }
     }ITERATE_GLTHREAD_END(&spf_root->spf_data->spf_result_head, curr);

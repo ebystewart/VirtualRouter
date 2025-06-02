@@ -6,6 +6,9 @@
 #include <string.h>
 #include "../tcpconst.h"
 
+
+#define layer3_ip_pkt_recv_from_layer2 layer3_ip_pkt_recv_from_bottom
+
 typedef bool bool_t;
 
 /* Routing table APIs */
@@ -17,13 +20,14 @@ void init_rt_table(rt_table_t **rt_table){
 
 static bool_t rt_table_entry_add(rt_table_t *rt_table, l3_route_t *l3_route){
     l3_route_t *l3_route_old = rt_table_lookup(rt_table, l3_route->dest_ip, l3_route->mask_dest_ip);
-
+#if 0
     if(l3_route_old && IS_L3_ROUTES_EQUAL(l3_route_old, l3_route)){
         return FALSE;
     }
     if(l3_route_old){
         delete_rt_table_entry(rt_table, l3_route->dest_ip, l3_route->mask_dest_ip);
     }
+#endif
     init_glthread(&l3_route->rt_glue);
     glthread_add_next(&rt_table->route_list, &l3_route->rt_glue);
     return TRUE;
@@ -68,13 +72,22 @@ bool_t is_layer3_local_delivery(node_t *node, unsigned int dst_ip)
 }
 
 void rt_table_add_direct_route(rt_table_t *rt_table, char *dst_ip, char mask){
-    rt_table_add_route(rt_table, dst_ip, mask, 0, 0);
+    rt_table_add_route(rt_table, dst_ip, mask, 0, 0, 0);
 }
 
-void rt_table_add_route(rt_table_t *rt_table, char *dst_ip, char mask, char *gw_ip, char *oif){
+static void l3_route_free(l3_route_t *l3_route)
+{
+    assert(IS_GLTHREAD_LIST_EMPTY(&l3_route->rt_glue));
+    spf_flush_nexthops(l3_route->nexthops);
+    free(l3_route);
+}
+
+void rt_table_add_route(rt_table_t *rt_table, char *dst_ip, char mask, char *gw_ip, char *oif, uint32_t spf_metric){
 
     unsigned int dst_ip_int = 0U;
     char dst_str_with_mask[16];
+    bool_t new_route = FALSE;
+    uint32_t idx = 0U;
 
     printf("%s: Info - Destination Ip is %s\n", __FUNCTION__, dst_ip);
     apply_mask(dst_ip, mask, dst_str_with_mask);
@@ -82,30 +95,52 @@ void rt_table_add_route(rt_table_t *rt_table, char *dst_ip, char mask, char *gw_
     inet_pton(AF_INET, dst_str_with_mask, &dst_ip_int);
     dst_ip_int = ntohl(dst_ip_int);//
     printf("%s: Info - IP as integer is %d\n",__FUNCTION__, dst_ip_int);
-    l3_route_t *l3_route = l3rib_lookup_lpm(rt_table, dst_ip_int);
+    l3_route_t *l3_route = l3rib_lookup(rt_table, dst_ip_int, mask);
     /* Assert if route entry already exist */
-    assert(!l3_route);
-
-    l3_route = calloc(1, sizeof(l3_route_t));
-    strncpy(l3_route->dest_ip, dst_str_with_mask, 16);
-    l3_route->dest_ip[15] = '\0';
-    l3_route->mask_dest_ip = mask;
-
-    if(!gw_ip && !oif)
-        l3_route->is_direct = TRUE;
-    else
-        l3_route->is_direct = FALSE;
-
-    if(gw_ip && oif){
-        strncpy(l3_route->gw_ip, gw_ip, 16);
+    //assert(!l3_route);
+    if(!l3_route){
+        l3_route = calloc(1, sizeof(l3_route_t));
+        strncpy(l3_route->dest_ip, dst_str_with_mask, 16);
         l3_route->dest_ip[15] = '\0';
-        strncpy(l3_route->oif, oif, IF_NAME_SIZE);
-        l3_route->oif[IF_NAME_SIZE - 1] = '\0';
+        l3_route->mask_dest_ip = mask;
+        new_route = TRUE;
+        l3_route->is_direct = TRUE;
+    }
+    /* get the index in to nexthop array to fill the new nexthop */
+    if(!new_route){
+        for( ; idx < MAX_NXT_HOPS; idx++){
+            if(l3_route->nexthops[idx]){
+                if((strncmp(l3_route->nexthops[idx]->gw_ip, gw_ip, 16U) == 0U) && (l3_route->nexthops[idx]->oif == oif)){
+                    printf("%s: Error - Attempt to add duplicate route\n", __FUNCTION__);
+                    return;
+                }
+            }
+            else
+                break;
+        }
     }
 
-    if(!rt_table_entry_add(rt_table, l3_route)){
-        printf("Error: Route %s/%d installation failed \n", dst_str_with_mask, mask);
-        free(l3_route);
+    if(idx == MAX_NXT_HOPS - 1U){
+        printf("%s: Error - No nexthop space left for route %s/%u\n", dst_str_with_mask, mask);
+        return;
+    }
+
+    if(gw_ip && oif){
+        nexthop_t *nexthop = calloc(1, sizeof(nexthop_t));
+        l3_route->nexthops[idx] = nexthop;
+        l3_route->is_direct = FALSE;
+        l3_route->spf_metric = spf_metric;
+        nexthop->ref_count++;
+        strncpy(nexthop->gw_ip, gw_ip, 16);
+        nexthop->gw_ip[15] = '\0';
+        nexthop->oif = oif;
+    }
+
+    if(new_route){
+        if(!rt_table_entry_add(rt_table, l3_route)){
+            printf("Error: Route %s/%d installation failed \n", dst_str_with_mask, mask);
+            l3_route_free(l3_route);
+        }
     }
 }
 
@@ -120,6 +155,27 @@ l3_route_t *rt_table_lookup(rt_table_t *rt_table, char *ip_addr, char mask){
             return l3_route;
         }
     }ITERATE_GLTHREAD_END(&rt_table->route_list, curr);
+}
+
+l3_route_t *l3rib_lookup(rt_table_t *rt_table, uint32_t dst_ip, char mask)
+{
+    char dst_ip_str[16];
+    glthread_t *curr = NULL;
+    char dst_str_with_mask[16];
+    l3_route_t *l3_route = NULL;
+
+    ip_addr_n_to_p(dst_ip, dst_ip_str);
+    apply_mask(dst_ip_str, mask, dst_str_with_mask);
+
+    ITERATE_GLTHREAD_BEGIN(&rt_table->route_list, curr){
+        l3_route = rt_glue_to_l3_route(curr);
+        if((strncmp(dst_str_with_mask, l3_route->dest_ip, 16U) == 0U) && (l3_route->mask_dest_ip == mask))
+        {
+            return l3_route;
+        }
+    }ITERATE_GLTHREAD_END(&rt_table->route_list, curr);
+    
+    return NULL;
 }
 
 /* Lookup routing table using longest prefix match */
@@ -188,16 +244,65 @@ void clear_rt_table(rt_table_t *rt_table)
 }
 
 void dump_rt_table(rt_table_t *rt_table){
-    l3_route_t *l3_route;
-    glthread_t *curr;
+    uint32_t idx = 0U;
+    uint32_t count = 0U;
+    l3_route_t *l3_route = NULL;
+    glthread_t *curr = NULL;
+
+    printf("L3 Routing Table\n");
 
     ITERATE_GLTHREAD_BEGIN(&rt_table->route_list, curr){
         l3_route = rt_glue_to_l3_route(curr);
-        printf("\t%-18s %-4d %-18s %s\n",
-                l3_route->dest_ip, l3_route->mask_dest_ip, 
-                l3_route->is_direct ? "NA" : l3_route->gw_ip,
-                l3_route->is_direct ? "NA" : l3_route->oif);
-    }ITERATE_GLTHREAD_END(&rt_table->route_list, curr);
+        count++;
+        if(l3_route->is_direct){
+            if(count != 1U){
+                printf("\t|===================|=======|====================|==============|==========|\n");
+            }
+            else{
+                printf("\t|======= IP ========|== M ==|======= GW =========|==== Oif =====|== cost ==|\n");
+            }
+            printf("\t|%-8s |  %-4d   |    %-18s   |    %-12s   |           |\n", l3_route->dest_ip, l3_route->mask_dest_ip, "NA", "NA");
+            continue;
+        }
+        for( idx = 0U; idx < MAX_NXT_HOPS; idx++){
+            if(l3_route->nexthops[idx]){
+                if(idx == 0){
+                    if(count != 1){
+                        printf("\t|===================|=======|====================|==============|==========|\n");
+                    }
+                    else{
+                        printf("\t|======= IP ========|== M ==|======== Gw ========|===== Oif ====|== Cost ==|\n");
+                    }
+                    printf("\t|%-18s |  %-4d | %-18s | %-12s |  %-4u    |\n", 
+                            l3_route->dest_ip, l3_route->mask_dest_ip,
+                            l3_route->nexthops[idx]->gw_ip, 
+                            l3_route->nexthops[idx]->oif->if_name, l3_route->spf_metric);
+                }
+                else{
+                    printf("\t|                   |       | %-18s | %-12s |          |\n", 
+                            l3_route->nexthops[idx]->gw_ip, 
+                            l3_route->nexthops[idx]->oif->if_name);
+                }
+            }
+        }
+    } ITERATE_GLTHREAD_END(&rt_table->route_list, curr); 
+    printf("\t|===================|=======|====================|==============|==========|\n");
+}
+
+nexthop_t * l3_route_get_active_nexthop(l3_route_t *l3_route)
+{
+    if(l3_is_direct_route(l3_route)){
+        return NULL;
+    }
+    nexthop_t *nexthop = l3_route->nexthops[l3_route->nxthop_idx];
+    assert(nexthop);
+
+    l3_route->nxthop_idx++;
+
+    if(l3_route->nxthop_idx == MAX_NXT_HOPS || (!l3_route->nexthops[l3_route->nxthop_idx])){
+        l3_route->nxthop_idx = 0U;
+    }
+    return nexthop;
 }
 
 /* Packet promotion APIs */
@@ -216,12 +321,6 @@ static void layer3_pkt_recv_from_top(node_t *node, char *pkt, unsigned int size,
     ip_hdr.dst_ip = dest_ip_address;
     ip_hdr.total_length = (short)ip_hdr.hdr_len + (short)(size/4) + (short)((size%4)?1:0);
 
-    l3_route_t *l3_route = l3rib_lookup_lpm(NODE_RT_TABLE(node), ip_hdr.dst_ip);
-    if(!l3_route){
-        printf("%s: No L3 route found on node %s\n", __FUNCTION__, node->node_name);
-        return;
-    }
-    printf("%s: Info - L3 route found on %s\n", __FUNCTION__, node->node_name);
     char *new_pkt = NULL;
     unsigned int new_pkt_size = 0U;
     new_pkt_size = ip_hdr.total_length * 4U;
@@ -231,14 +330,37 @@ static void layer3_pkt_recv_from_top(node_t *node, char *pkt, unsigned int size,
     if(pkt && size){
         memcpy(new_pkt + (ip_hdr.hdr_len * 4U), pkt, size);
     }
+
+    l3_route_t *l3_route = l3rib_lookup_lpm(NODE_RT_TABLE(node), ip_hdr.dst_ip);
+    if(!l3_route){
+        printf("%s: No L3 route found on node %s\n", __FUNCTION__, node->node_name);
+        free(new_pkt);
+        return;
+    }
+    printf("%s: Info - L3 route found on %s\n", __FUNCTION__, node->node_name);
+
     /* Now resolve next hop */
     bool_t is_direct_route = l3_is_direct_route(l3_route);
-    unsigned int next_hop_ip;
+    char *shifted_pkt_buffer = pkt_buffer_shift_right(new_pkt, new_pkt_size, MAX_PACKET_BUFFER_SIZE);
+
+    if(is_direct_route){
+        demote_pkt_to_layer2(node, dest_ip_address, 0, shifted_pkt_buffer, new_pkt_size, ETH_IP);
+        return;
+    }
+    /* if the route is non-direct, ask layer 2 to send pkt thaough all the ECMP nexthops */
     if(!is_direct_route){
+        unsigned int next_hop_ip;
+
+        nexthop_t *nexthop = l3_route_get_active_nexthop(l3_route);
+        if(!nexthop){
+            free(new_pkt);
+            return;
+        }
         /* Case 1 - L3 forwarding */
-        inet_pton(AF_INET, l3_route->gw_ip, &next_hop_ip);
+        inet_pton(AF_INET, nexthop->gw_ip, &next_hop_ip);
         next_hop_ip = htonl(next_hop_ip);
         printf("%s: Info - Forward the pkt to the found route\n", __FUNCTION__);
+#if 0        
     }
     else{
         /* Case 2: Direct host (same subnet) delivery case */
@@ -247,11 +369,12 @@ static void layer3_pkt_recv_from_top(node_t *node, char *pkt, unsigned int size,
         next_hop_ip = dest_ip_address;
         printf("%s: Info - IP belongs to the same subnet or to itself\n", __FUNCTION__);
     }
-    char *shifted_pkt_buffer = pkt_buffer_shift_right(new_pkt, new_pkt_size, MAX_PACKET_BUFFER_SIZE);
-    printf("%s: Info - pkt size is %u\n", __FUNCTION__, new_pkt_size);
+#endif
+        printf("%s: Info - pkt size is %u\n", __FUNCTION__, new_pkt_size);
 
-    demote_pkt_to_layer2(node, next_hop_ip, is_direct_route? 0 : l3_route->oif, shifted_pkt_buffer, new_pkt_size, ETH_IP);
-    free(new_pkt);
+        demote_pkt_to_layer2(node, next_hop_ip, is_direct_route? 0 : nexthop->oif, shifted_pkt_buffer, new_pkt_size, ETH_IP);
+        free(new_pkt);
+    }
 }
 
 /*An API to be used by L4 or L5 to push the pkt down the TCP/IP
@@ -262,18 +385,30 @@ void demote_packet_to_layer3(node_t *node, char *pkt, unsigned int size, int pro
     layer3_pkt_recv_from_top(node, pkt, size, protocol_number, dest_ip_address);
 }
 
-static void layer3_ip_pkt_recv_from_bottom(node_t *node, interface_t *interface, ip_hdr_t *pkt, unsigned int pkt_size)
+static void layer3_ip_pkt_recv_from_bottom(node_t *node, interface_t *interface, ip_hdr_t *pkt, unsigned int pkt_size, uint32_t flags)
 {
     char *l4_hdr;
     char *l5_hdr;
     char dst_ip_addr[16];
 
-    ip_hdr_t *ip_hdr = pkt;
+    ip_hdr_t *ip_hdr = NULL;
+    ethernet_frame_t *eth_pkt = NULL;
+    bool_t include_ip_hdr;
+
+    if(flags & DATA_LINK_HDR_INCLUDED)
+    {
+        eth_pkt = (ethernet_frame_t *)pkt;
+        ip_hdr = (ip_hdr_t *)GET_ETHERNET_HDR_PAYLOAD(eth_pkt);
+    }
+    else{
+        ip_hdr = (ip_hdr_t *)pkt;
+    }
+
     unsigned int dst_ip = htonl(ip_hdr->dst_ip);
     inet_ntop(AF_INET, &dst_ip, dst_ip_addr, 16);
     printf("%s: Info - pkt size is %u and dst ip is %s\n", __FUNCTION__, pkt_size, dst_ip_addr);
 
-    /* Implement layer3 forwarding */
+    /* Implement layer 3 forwarding */
     l3_route_t * l3_route = l3rib_lookup_lpm(NODE_RT_TABLE(node), ip_hdr->dst_ip);
     if(!l3_route){
         /* router doesn't have a route configured to forward. Drop the pkt */
@@ -291,7 +426,7 @@ static void layer3_ip_pkt_recv_from_bottom(node_t *node, interface_t *interface,
             of the router or the loopback address
         */
        printf("%s: INFO - The L3 route configured is direct\n", __FUNCTION__);
-       if(is_layer3_local_delivery(node, dst_ip)){
+       if(is_layer3_local_delivery(node, ip_hdr->dst_ip)){
             printf("%s: INFO - LO or Intf address matches with the destination IP\n", __FUNCTION__);
             l4_hdr = (char *)IP_PKT_PAYLOAD_PTR(ip_hdr);
             l5_hdr = l4_hdr;
@@ -301,6 +436,11 @@ static void layer3_ip_pkt_recv_from_bottom(node_t *node, interface_t *interface,
                     printf("IP_Address %s, Ping Success\n", dst_ip_addr);
                     break;
                 }
+                case IP_IN_IP:
+                    /*Packet has reached ERO, now set the packet onto its new 
+                    Journey from ERO to final destination*/
+                    layer3_ip_pkt_recv_from_layer2(node, interface, (char *)IP_PKT_PAYLOAD_PTR(ip_hdr), IP_PKT_PAYLOAD_SIZE(ip_hdr), 0);
+                    return;
                 default:
                     ;
             }
@@ -320,19 +460,22 @@ static void layer3_ip_pkt_recv_from_bottom(node_t *node, interface_t *interface,
         return;
     }
     unsigned int next_hop_ip;
-    inet_pton(AF_INET, l3_route->gw_ip, &next_hop_ip);
+    nexthop_t *nexthop = NULL;
+    nexthop = l3_route_get_active_nexthop(l3_route);
+    assert(nexthop);
+    inet_pton(AF_INET, nexthop->gw_ip, &next_hop_ip);
     next_hop_ip = htonl(next_hop_ip);
-    demote_pkt_to_layer2(node, next_hop_ip, l3_route->oif, (char *)ip_hdr, pkt_size, ETH_IP);
+    demote_pkt_to_layer2(node, next_hop_ip, nexthop->oif, (char *)ip_hdr, pkt_size, ETH_IP);
 }
 
-static void layer3_pkt_recv_from_bottom(node_t *node, interface_t *interface, char *pkt, unsigned int pkt_size, int L3_protocol_type)
+static void layer3_pkt_recv_from_bottom(node_t *node, interface_t *interface, char *pkt, unsigned int pkt_size, int L3_protocol_type, uint32_t flags)
 {
     switch(L3_protocol_type){
         case ETH_IP:
         case IP_IN_IP:
         {
             printf("%s: Info - pkt size is %u\n", __FUNCTION__, pkt_size);
-            layer3_ip_pkt_recv_from_bottom(node, interface, (ip_hdr_t *)pkt, pkt_size);
+            layer3_ip_pkt_recv_from_bottom(node, interface, (ip_hdr_t *)pkt, pkt_size, flags);
             break;
         }
         default:
@@ -345,9 +488,9 @@ static void layer3_pkt_recv_from_bottom(node_t *node, interface_t *interface, ch
 void promote_pkt_to_layer3(node_t *node,                /*Current node on which the pkt is received*/
                       interface_t *interface,           /*ingress interface*/
                       char *pkt, unsigned int pkt_size, /*L3 payload*/
-                      int L3_protocol_number){          /*obtained from eth_hdr->type field*/
+                      int L3_protocol_number, uint32_t flags){          /*obtained from eth_hdr->type field*/
 
-    layer3_pkt_recv_from_bottom(node, interface, pkt, pkt_size, L3_protocol_number);
+    layer3_pkt_recv_from_bottom(node, interface, pkt, pkt_size, L3_protocol_number, flags);
 }
 
 /* Extern APIs which are to be defined in other layers*/

@@ -17,4 +17,9 @@
 
 #define MAX_NXT_HOPS        4
 
+
+
+#define IP_HDR_INCLUDED (1  << 0)
+#define DATA_LINK_HDR_INCLUDED  (1 << 1)
+
 #endif

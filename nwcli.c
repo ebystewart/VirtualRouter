@@ -470,12 +470,26 @@ void nw_init_cli(void)
                 }
                 {
                     /*show node <node-name> spf-result*/
-                    static param_t spf_result;
-                    init_param(&spf_result, CMD, "spf-result", spf_algo_handler, 0, INVALID, 0, "SPF Results");
-                    libcli_register_param(&node_name, &spf_result);
-                    set_param_cmd_code(&spf_result, CMDCODE_SHOW_SPF_RESULTS);
+                    static param_t spf;
+                    init_param(&spf, CMD, "spf", spf_algo_handler, 0, INVALID, 0, "SPF Results");
+                    libcli_register_param(&node_name, &spf);
+                    set_param_cmd_code(&spf, CMDCODE_SHOW_SPF_RESULTS);
                  }           
             }
+        }
+    }
+
+    {
+        /* run spf */
+        static param_t spf;
+        init_param(&spf, CMD, "spf", 0, 0, INVALID, 0, "Shortest Path");
+        libcli_register_param(run, &spf);
+        {
+            /* run spf all */
+            static param_t all;
+            init_param(&all, CMD, "all", spf_algo_handler, 0, INVALID, 0, "ALL nodes");
+            libcli_register_param(&spf, &all);
+            set_param_cmd_code(&all, CMDCODE_RUN_SPF_ALL);
         }
     }
 
