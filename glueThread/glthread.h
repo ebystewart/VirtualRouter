@@ -23,6 +23,8 @@ unsigned int get_glthread_list_count(glthread_t *glthread_head);
 void glthread_priority_insert(glthread_t *glthread_head, glthread_t *glthread,
                                 int (*comp_fn)(void *, void *), int count);
 
+glthread_t *dequeue_glthread_first(glthread_t *base_glthread);
+
 
 #define IS_GLTHREAD_LIST_EMPTY(glthread_ptr)    \
     (((glthread_ptr)->right == NULL) && ((glthread_ptr)->left == NULL))

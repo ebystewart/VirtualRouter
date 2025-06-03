@@ -116,3 +116,7 @@ conf node R4 route 122.1.1.3 32 30.1.1.1 eth0/5
 show node R4 rt
 show node R1 spf-result
 run node R1 spf
+run spf all
+show node R1 spf
+show node R1 spf
+run spf all

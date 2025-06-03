@@ -45,7 +45,7 @@ static void show_spf_results(node_t *node)
     spf_result_t *spf_result = NULL;
     interface_t *oif = NULL;
 
-    printf("SPF run results ofr node %s\n", node->node_name);
+    printf("SPF run results of node %s\n", node->node_name);
 
     ITERATE_GLTHREAD_BEGIN(&node->spf_data->spf_result_head, curr){
         spf_result = spf_result_glue_to_spf_result(curr);
@@ -302,23 +302,25 @@ static void compute_spf(node_t *spf_root)
     initialize_direct_nbrs(spf_root);
 
     /* initialize the priority queue */
-    glthread_t *priority_lst;
+    glthread_t priority_lst;
     init_glthread(&priority_lst);
+    
     /* insert The spf_root as the only node in to PQ to begin with */
     glthread_priority_insert(&priority_lst, &spf_root->spf_data->priority_thread_glue, \
                              spf_comparison_fn, spf_data_offset_from_priority_thread_glue);
 
-    while(!IS_GLTHREAD_LIST_EMPTY(priority_lst)){
+    while(!IS_GLTHREAD_LIST_EMPTY(&priority_lst)){
         curr = dequeue_glthread_first(&priority_lst);
         curr_spf_data = priority_thread_glue_to_spf_data(curr);
 
         if(curr_spf_data->node == spf_root){
             ITERATE_NODE_NBRS_BEGIN(curr_spf_data->node, nbr, oif, nxt_hop_ip){
-                if(is_interface_l3_bidirectional(oif))
+                if(!is_interface_l3_bidirectional(oif))
                     continue;
                 if(IS_GLTHREAD_LIST_EMPTY(&nbr->spf_data->priority_thread_glue)){
                     glthread_priority_insert(&priority_lst, &nbr->spf_data->priority_thread_glue, \
                                              spf_comparison_fn, spf_data_offset_from_priority_thread_glue);
+                                             
                 }
             }ITERATE_NODE_NBRS_END(curr_spf_data->node, nbr, oif, nxt_hop_ip);
             continue;
@@ -331,6 +333,11 @@ static void compute_spf(node_t *spf_root)
 
     /* Calculate final routing table from spf_result */
     int count = spf_install_routes(spf_root);
+
+    #if 1 //SPF_LOGGING
+    printf("root : %s : Event : Route Installation Count = %d\n", 
+            spf_root->node_name, count);
+    #endif
 }
 
 static void compute_spf_all_routers(graph_t *topo)
