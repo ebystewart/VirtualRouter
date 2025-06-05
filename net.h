@@ -168,7 +168,10 @@ bool_t is_trunk_intf_vlan_enabled(interface_t *interface, unsigned int vlan_id);
 unsigned int get_access_intf_operating_vlan_id(interface_t *interface);
 
 bool_t is_interface_l3_bidirectional(interface_t *interface);
+bool_t is_same_subnet(char *ip_addr, char mask, char *other_ip_addr);
+#if 0
 bool_t is_same_subnet(char *ip_addr, uint16_t mask, char *ip_to_compare);
+#endif
 
 static inline char *intf_l2_mode_str(intf_l2_mode_t intf_l2_mode)
 {

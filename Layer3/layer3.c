@@ -120,7 +120,7 @@ void rt_table_add_route(rt_table_t *rt_table, char *dst_ip, char mask, char *gw_
         }
     }
 
-    if(idx == MAX_NXT_HOPS - 1U){
+    if(idx == MAX_NXT_HOPS){
         printf("%s: Error - No nexthop space left for route %s/%u\n", dst_str_with_mask, mask);
         return;
     }
@@ -261,7 +261,7 @@ void dump_rt_table(rt_table_t *rt_table){
             else{
                 printf("\t|======= IP ========|== M ==|======= GW =========|==== Oif =====|== cost ==|\n");
             }
-            printf("\t|%-8s |  %-4d   |    %-18s   |    %-12s   |           |\n", l3_route->dest_ip, l3_route->mask_dest_ip, "NA", "NA");
+            printf("\t|%-18s |  %-4d | %-18s | %-12s |          |\n", l3_route->dest_ip, l3_route->mask_dest_ip, "NA", "NA");
             continue;
         }
         for( idx = 0U; idx < MAX_NXT_HOPS; idx++){

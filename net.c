@@ -239,7 +239,7 @@ bool_t is_trunk_intf_vlan_enabled(interface_t *interface, unsigned int vlan_id)
     }
     return FALSE;
 }
-
+#if 0
 /* SPF related */
 bool_t is_interface_l3_bidirectional(interface_t *interface)
 {
@@ -297,3 +297,73 @@ bool_t is_same_subnet(char *ip_addr, uint16_t mask, char *ip_to_compare)
         
     return TRUE;
 }
+#endif
+#if 1
+bool_t
+is_interface_l3_bidirectional(interface_t *interface){
+
+    /* If interface is not configured 
+     * with IP address*/
+    if(!IS_INTF_L3_MODE(interface)){
+        printf("%s: Interface is not in L3 mode\n", __FUNCTION__);
+        return FALSE;
+    }
+#if 0
+    /*if interface is in L2 mode*/
+    if (IF_L2_MODE(interface) == ACCESS || IF_L2_MODE(interface) == TRUNK)
+    {
+        printf("%s: Interface is either in trunk or access mode\n", __FUNCTION__);
+        return FALSE;
+    }
+#endif        
+
+    interface_t *other_interface = &interface->link->intf1 == interface ?    \
+            &interface->link->intf2 : &interface->link->intf1;
+
+    if(!other_interface){
+        printf("%s: Neighbour interface doesn't exist\n", __FUNCTION__);
+        return FALSE;
+    }
+
+    if(!IF_IS_UP(interface) || !IF_IS_UP(other_interface)){
+        printf("%s: Interfaces(s) is/are not UP\n", __FUNCTION__);
+        return FALSE;
+    }
+#if 0
+    if(IF_L2_MODE(other_interface) == ACCESS || IF_L2_MODE(interface) == TRUNK){
+        printf("%s: Neighbour interface is either in trunk or access mode\n", __FUNCTION__);
+        return FALSE;
+    }
+#endif
+
+    if(!IS_INTF_L3_MODE(other_interface)){
+        printf("%s: Neighbour interface not in L3 mode\n", __FUNCTION__);
+        return FALSE;
+    }
+
+    if(!(is_same_subnet(IF_IP(interface), IF_MASK(interface), IF_IP(other_interface)) &&
+        is_same_subnet(IF_IP(other_interface), IF_MASK(other_interface), IF_IP(interface)))){
+        printf("%s: Link between two different subnets\n", __FUNCTION__);
+        return FALSE;
+    }
+    printf("%s: The link is bidirectional and in L3 mode\n", __FUNCTION__);
+    return TRUE;
+}
+bool_t is_same_subnet(char *ip_addr, char mask, char *other_ip_addr){
+
+    char intf_subnet[16];
+    char subnet2[16];
+
+    memset(intf_subnet, 0 , 16);
+    memset(subnet2, 0 , 16);
+
+    apply_mask(ip_addr, mask, intf_subnet);
+    apply_mask(other_ip_addr, mask, subnet2);
+
+    if(strncmp(intf_subnet, subnet2, 16) == 0){
+        return TRUE;
+    }
+    return FALSE;
+}
+
+#endif
