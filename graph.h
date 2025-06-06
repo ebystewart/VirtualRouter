@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <string.h>
+#include "tcp_ip_trace.h"
 
 #define IF_NAME_SIZE       16U
 #define NODE_NAME_SIZE     16U
@@ -22,6 +23,7 @@ typedef struct interface_{
     struct node_ *att_node;
     struct link_ *link;
     intf_nw_prop_t intf_nw_prop;
+    log_t log_info;
 }interface_t;
 
 struct link_{
@@ -37,9 +39,13 @@ struct node_{
     unsigned int udp_port_number;
     int udp_sock_fd;
     node_nw_prop_t node_nw_prop;
+
     /* SPF calculation */
     spf_data_t *spf_data;
     glthread_t graph_glue;
+
+    /* Node Logging */
+    log_t log_info;
 };
 
 typedef struct graph_{

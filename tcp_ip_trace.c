@@ -10,6 +10,28 @@ static void init_string_buffer(void){
     memset(string_buffer, 0, sizeof(string_buffer));
 }
 
+static char *string_ethernet_hdr_type(unsigned short type){
+
+    char *proto_srt = NULL;
+    init_string_buffer();
+    switch(type){
+        case ETH_IP:
+        {
+            strncpy(string_buffer, "ETH_IP", strlen("ETH_IP"));
+            break;
+        }
+        case ARP_MSG:
+        {
+            strncpy(string_buffer, "ARP_MSG", strlen("ARP_MSG"));
+            break;
+        }
+        default:
+            break;
+    }
+
+    return string_buffer;
+}
+
 static char *string_arp_hdr_type(int type)
 {
     init_string_buffer();
@@ -83,23 +105,24 @@ static int tcp_dump_arp_hdr(char *buff, arp_packet_t *arp_hdr, uint32_t pkt_size
     char ip1[16];
     char ip2[16];
 
+    ip_addr_n_to_p(arp_hdr->src_ip, ip1);
+    ip_addr_n_to_p(arp_hdr->dst_ip, ip2);
+
     rc += sprintf(buff + rc, "ARP Hdr: ");
-    rc += sprintf(buff + rc, "Arp Type: %s %02x:%02x:%02x:%02x:%02x:%02x -->"\
-                                          "%02x:%02x:%02x:%02x:%02x:%02x %s --> %s\n", string_arp_hdr_type(apr_hdr->op_code),\
-                                        arp_hdr->src_mac.mac_addr[0],   \
-                                        arp_hdr->src_mac.mac_addr[1],   \
-                                        arp_hdr->src_mac.mac_addr[2],   \
-                                        arp_hdr->src_mac.mac_addr[3],   \
-                                        arp_hdr->src_mac.mac_addr[4],   \
-                                        arp_hdr->src_mac.mac_addr[5],   \
-                                        arp_hdr->dst_mac.mac_addr[0],   \
-                                        arp_hdr->dst_mac.mac_addr[1],   \
-                                        arp_hdr->dst_mac.mac_addr[2],   \
-                                        arp_hdr->dst_mac.mac_addr[3],   \
-                                        arp_hdr->dst_mac.mac_addr[4],   \
-                                        arp_hdr->dst_mac.mac_addr[5],   \
-                                        ip_addr_n_to_p(arp_hdr->src_ip, ip1),\
-                                        ip_addr_n_to_p(arp_hdr->dst_ip, ip2));
+    rc += sprintf(buff + rc, "Arp Type: %s %02x:%02x:%02x:%02x:%02x:%02x -->"
+                                        "%02x:%02x:%02x:%02x:%02x:%02x %s --> %s\n", string_arp_hdr_type(arp_hdr->op_code),\
+                                        arp_hdr->src_mac.mac_addr[0],
+                                        arp_hdr->src_mac.mac_addr[1],
+                                        arp_hdr->src_mac.mac_addr[2],
+                                        arp_hdr->src_mac.mac_addr[3],
+                                        arp_hdr->src_mac.mac_addr[4],
+                                        arp_hdr->src_mac.mac_addr[5],
+                                        arp_hdr->dst_mac.mac_addr[0],
+                                        arp_hdr->dst_mac.mac_addr[1],
+                                        arp_hdr->dst_mac.mac_addr[2],   
+                                        arp_hdr->dst_mac.mac_addr[3],
+                                        arp_hdr->dst_mac.mac_addr[4],
+                                        arp_hdr->dst_mac.mac_addr[5], ip1, ip2);
 
     return rc;
 }
@@ -156,4 +179,62 @@ static int tcp_dump_ethernet_hdr(char *buff, ethernet_frame_t *eth_hdr, uint32_t
     }
 
     return rc;
+}
+
+static FILE *initialize_node_log_file(node_t *node)
+{
+    char file_name[32];
+    memset(file_name, 0, sizeof(file_name));
+    sprintf(file_name, "logs/%s.txt", node->node_name);
+
+    FILE *fptr = open(file_name, "w");
+    if(!fptr){
+        printf("%s: Could not create node log file %s, errorcode %d\n", file_name, errno);
+        return 0;
+    }
+    return fptr;
+}
+
+static FILE *initialize_interface_log_file(interface_t *intf)
+{
+    char file_name[64];
+    memset(file_name, 0, sizeof(file_name));
+    node_t *node = intf->att_node;
+    sprintf(file_name, "logs/%s-%s.txt", node->node_name, intf->if_name);
+
+    FILE *fptr = open(file_name, "w");
+    if(!fptr){
+        printf("%s: Could not create interface log file %s, errorcode %d\n", file_name, errno);
+        return 0;
+    }
+    return fptr;
+}
+
+void tcp_ip_init_node_log_info(node_t *node){
+
+    log_t *log_info = &node->log_info;
+    log_info->all       = FALSE;
+    log_info->recv      = FALSE;
+    log_info->send      = FALSE;
+    log_info->is_stdout = FALSE;
+    log_info->l3_fwd    = FALSE;
+    log_info->log_file = initialize_node_log_file(node); 
+}
+
+void tcp_ip_set_all_log_info_params(log_t *log_info, bool_t status){
+    log_info->all       = status;
+    log_info->recv      = status;
+    log_info->send      = status;
+    log_info->l3_fwd    = status;
+}
+
+void tcp_ip_init_intf_log_info(interface_t *intf){
+
+    log_t *log_info = &intf->log_info;
+    log_info->all       = FALSE;
+    log_info->recv      = FALSE;
+    log_info->send      = FALSE;
+    log_info->is_stdout = FALSE;
+    log_info->l3_fwd    = FALSE;
+    log_info->log_file = initialize_interface_log_file(intf); 
 }
