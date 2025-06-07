@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <memory.h>
+#include "tcp_ip_trace.h"
 
 
 #define TRUE  1U
@@ -44,6 +45,8 @@ typedef struct mac_add_{
 #pragma pack(pop)
 
 typedef struct node_nw_prop_{
+    node_t *node;    /* back pointer to the node */
+    uint32_t flags;  /* Encodes device type capabilities of nodes */
     /* L2 Properties */
     arp_table_t *arp_table;
     mac_table_t *mac_table;
@@ -52,6 +55,10 @@ typedef struct node_nw_prop_{
     /* L3 Properties */
     bool_t is_lb_addr_config;
     ip_add_t lb_addr; /* Loopback address of the node */
+
+    /* sending buffer */
+    char *send_buffer;  /* used to send out pkts */
+    char *send_log_buffer; /* used for logging */
 }node_nw_prop_t;
 
 typedef struct intf_nw_prop_{
@@ -88,6 +95,8 @@ static inline void init_node_nw_prop(node_nw_prop_t *node_nw_prop)
     init_arp_table(&(node_nw_prop->arp_table));
     init_mac_table(&(node_nw_prop->mac_table));
     init_rt_table(&(node_nw_prop->rt_table));
+    node_nw_prop->send_buffer = calloc(1, 2*TCP_PRINT_BUFFER_SIZE);
+    node_nw_prop->send_log_buffer = calloc(1, TCP_PRINT_BUFFER_SIZE);
 }
 
 static inline void init_intf_nw_prop(intf_nw_prop_t *intf_nw_prop)

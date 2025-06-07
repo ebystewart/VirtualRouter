@@ -401,6 +401,8 @@ static int intf_config_handler(param_t *param, ser_buff_t *tlv_buf, op_mode enab
 }
 
 extern int spf_algo_handler(param_t param, ser_buff_t *tlv_buf, op_mode enable_or_disable);
+extern void tcp_ip_traceoptions_cli(param_t *node_name_param, param_t *intf_name_param);
+extern int traceoptions_handler(param_t *param, ser_buff_t *tlv_buf, op_mode enable_or_disable);  
 
 void nw_init_cli(void)
 {
@@ -431,6 +433,14 @@ void nw_init_cli(void)
             init_param(&node_name, LEAF, 0, 0, validate_node_existence, STRING, "node-name", "Node Name");
             libcli_register_param(&node, &node_name);
             {
+                {
+                    /* show node <node_name> log-status */
+                    static param_t log_status;
+                    init_param(&log_status, CMD, "log-status", traceoptions_handler, 0, INVALID, 0, "log-status");
+                    libcli_register_param(&node_name, &log_status);
+                    set_param_cmd_code(&log_status, CMDCODE_DEBUG_SHOW_LOG_STATUS);
+                }
+
                 {
                     /* Show node <node_name> arp */
                     static param_t arp;
@@ -465,6 +475,9 @@ void nw_init_cli(void)
                         set_param_cmd_code(&stats, CMDCODE_SHOW_INTF_STATS);
                         {
                             /* show node <node_name> interface statistics protocol */
+                            static param_t protocol;
+                            init_param(&protocol, CMD, "protocol", 0, 0, INVALID, 0, "Protocol specific intf stats");
+                            libcli_register_param(&stats, &protocol);
                         }
                     }
                 }

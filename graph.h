@@ -51,6 +51,7 @@ struct node_{
 typedef struct graph_{
     char topology_name[TOPOLOGY_NAME_SIZE];
     glthread_t node_list;
+    bool_t gstdout;
 }graph_t;
 
 GLTHREAD_TO_STRUCT(graph_glue_to_node, node_t, graph_glue);

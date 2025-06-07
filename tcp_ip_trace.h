@@ -5,6 +5,7 @@
 #include <stdbool.h>
 
 #define TCP_PRINT_BUFFER_SIZE 1024
+#define TCP_GET_NODE_SEND_LOG_BUFFER(node) (node->node_nw_prop.send_log_buffer)
 
 typedef struct node_ node_t;
 typedef struct interface_ interface_t;
