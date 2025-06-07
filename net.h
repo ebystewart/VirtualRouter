@@ -131,6 +131,7 @@ static inline void init_intf_nw_prop(intf_nw_prop_t *intf_nw_prop)
 #define NODE_RT_TABLE(node_ptr)    ((node_ptr)->node_nw_prop.rt_table)
 #define IS_INTF_L3_MODE(intf_ptr)  ((intf_ptr)->intf_nw_prop.is_ipaddr_config)
 #define IF_L2_MODE(intf_ptr)       ((intf_ptr)->intf_nw_prop.intf_l2_mode)
+#define NODE_SEND_BUFFER(node_ptr)  (node_ptr->node_nw_prop.send_buffer)
 
 /* macro to iterate over neighbours of a node */
 /* Here oif and ip_addr_ptr(gw_ip) are outward pointers */

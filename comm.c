@@ -65,6 +65,7 @@ static void _pkt_receive(node_t *receiving_node, char *pkt_with_aux_data, unsign
     }
     recv_intf->intf_nw_prop.pkt_recv++;
 
+    tcp_dump_recv_logger(receiving_node, recv_intf, (char *)(pkt_with_aux_data + IF_NAME_SIZE), (pkt_size - IF_NAME_SIZE), ETH_HDR);
     /* Right align the received data */
     char *pkt = pkt_buffer_shift_right((pkt_with_aux_data + IF_NAME_SIZE), (pkt_size - IF_NAME_SIZE), (MAX_RECEIVE_BUFFER_SIZE-IF_NAME_SIZE));
 
@@ -182,9 +183,72 @@ int send_pkt_out(char *pkt, unsigned int pkt_size, interface_t *interface)
 
     if(rc > 0U){
         interface->intf_nw_prop.pkt_sent++;   
+        tcp_dump_send_logger(sending_node, interface, pkt_with_aux_data + IF_NAME_SIZE, pkt_size, ETH_HDR);
     }
     else{
         printf("%s: Error - Pkt send failed on node %s with error code %d\n", __FUNCTION__, sending_node->node_name, errno);
     }
     return rc;
+}
+
+int send_pkt_to_self(char *pkt, uint32_t pkt_size, interface_t *interface){
+
+    int rc = 0;    
+    node_t *sending_node = interface->att_node;
+    node_t *nbr_node = sending_node;
+   
+    if(!IF_IS_UP(interface)){
+        return 0;
+    }
+
+    uint32_t dst_udp_port_no = nbr_node->udp_port_number;
+    
+    int sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP );
+
+    if(sock < 0){
+        printf("Error : Sending socket Creation failed , errno = %d", errno);
+        return -1;
+    }
+    
+    interface_t *other_interface =  interface;
+
+    memset(NODE_SEND_BUFFER(sending_node), 0, MAX_PACKET_BUFFER_SIZE);
+
+    char *pkt_with_aux_data = NODE_SEND_BUFFER(sending_node);
+
+    strncpy(pkt_with_aux_data, other_interface->if_name, IF_NAME_SIZE);
+
+    pkt_with_aux_data[IF_NAME_SIZE - 1] = '\0';
+
+    memcpy(pkt_with_aux_data + IF_NAME_SIZE, pkt, pkt_size);
+
+    rc = _send_pkt_out(sock, pkt_with_aux_data, pkt_size + IF_NAME_SIZE, 
+                        dst_udp_port_no);
+
+    if(rc > 0){
+        tcp_dump_send_logger(sending_node, interface, 
+            pkt_with_aux_data + IF_NAME_SIZE, pkt_size, ETH_HDR);
+    }
+    close(sock);
+    return rc; 
+       
+}
+int
+send_pkt_flood(node_t *node, interface_t *exempted_intf, 
+                char *pkt, uint32_t pkt_size){
+
+    uint32_t i = 0;
+    interface_t *intf; 
+
+    for( ; i < MAX_IF_PER_NODE; i++){
+
+        intf = node->intf[i];
+        if(!intf) return 0;
+
+        if(intf == exempted_intf)
+            continue;
+
+        send_pkt_out(pkt, pkt_size, intf);
+    }
+    return 0;
 }
