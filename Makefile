@@ -18,7 +18,8 @@ OBJS=glueThread/glthread.o	\
 		Layer5/spf_algo/spf.o		\
 		Layer5/ping.o		\
 		tcpip_notif.o	 	\
-		tcp_ip_trace.o
+		tcp_ip_trace.o		\
+		tcp_ip_stack_init.o
 
 VirtualRouter.exe:${OBJS} CommandParser/libcli.a
 	${CC} ${CFLAGS} ${OBJS} -o VirtualRouter.exe ${LIBS}
@@ -56,8 +57,11 @@ utils.o:utils.c
 tcpip_notif.o:tcpip_notif.c
 	${CC} ${CFLAGS} -c tcpip_notif.c -I . -o tcpip_notif.o
 
-tcp_ip_trace.o.o:tcp_ip_trace.c
+tcp_ip_trace.o:tcp_ip_trace.c
 	${CC} ${CFLAGS} -c tcp_ip_trace.c -I . -o tcp_ip_trace.o
+
+tcp_ip_stack_init.o:tcp_ip_stack_init.c
+	${CC} ${CFLAGS} -c tcp_ip_stack_init.c -I . -o tcp_ip_stack_init.o
 
 Layer2/layer2.o:Layer2/layer2.c
 	${CC} ${CFLAGS} -c Layer2/layer2.c -I . -o Layer2/layer2.o

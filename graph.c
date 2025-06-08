@@ -10,6 +10,7 @@ graph_t *create_new_graph(char *topology_name)
     strncpy(graph->topology_name, topology_name, strlen(topology_name));
     graph->topology_name[TOPOLOGY_NAME_SIZE - 1] = '\0';
     init_glthread(&graph->node_list);
+    graph->gstdout = FALSE;
     return graph;
 }
 
@@ -26,6 +27,7 @@ node_t *create_graph_node(graph_t *graph, char * node_name)
 
     init_glthread(&node->graph_glue);
     node->spf_data = NULL;
+    tcp_ip_init_node_log_info(node);
     glthread_add_next(&graph->node_list, &node->graph_glue);
 
     return node;
@@ -60,6 +62,9 @@ void insert_link_between_two_nodes(node_t *node1, node_t *node2, char *from_if_n
     /* Assign random generated MAC to interfaces */
     interface_assign_mac_address(&link->intf1);
     interface_assign_mac_address(&link->intf2);
+
+    tcp_ip_init_intf_log_info(&link->intf1);
+    tcp_ip_init_intf_log_info(&link->intf2);
 }
 
 void dump_graph(graph_t *graph)

@@ -12,7 +12,7 @@ extern graph_t *build_linear_topo(void);
 extern graph_t *linear_3_node_topo(void);
 extern graph_t *L2_loop_topo(void);
 extern void nw_init_cli(void);
-
+extern void init_tcp_ip_stack(void);
 
 graph_t *topo = NULL;
 
@@ -34,7 +34,7 @@ int main(int argc, char **argv)
     char msg[] = "Hello! How are you?";
     send_pkt_out(msg, strlen(msg), oif);
     */
-
+    init_tcp_ip_stack();
     start_shell();
     return 0;
 }

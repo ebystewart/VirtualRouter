@@ -582,3 +582,8 @@ static void spf_explore_nbrs(node_t *spf_root, node_t *curr_node, glthread_t *pr
     /* If we are done processing the curr node, remove its nexthops and lower its ref_count */
     spf_flush_nexthops(curr_node->spf_data->nexthops);
 }
+
+void init_spf_algo(void)
+{
+    compute_spf_all_routers(topo);
+}

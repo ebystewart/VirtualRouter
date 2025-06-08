@@ -306,26 +306,26 @@ run node R1 ping 122.1.1.3 ero 122.1.1.4
     node_t *R3 = create_graph_node(topo, "R3");
     node_t *R4 = create_graph_node(topo, "R4");
 
-    insert_link_between_two_nodes(R1, R2, "eth0/0", "eth0/1", 1);
-    insert_link_between_two_nodes(R2, R3, "eth0/2", "eth0/3", 1);
-    insert_link_between_two_nodes(R3, R4, "eth0/4", "eth0/5", 1);
-    insert_link_between_two_nodes(R4, R1, "eth0/6", "eth0/7", 1);
+    insert_link_between_two_nodes(R1, R2, "eth0", "eth1", 1);
+    insert_link_between_two_nodes(R2, R3, "eth2", "eth3", 1);
+    insert_link_between_two_nodes(R3, R4, "eth4", "eth5", 1);
+    insert_link_between_two_nodes(R4, R1, "eth6", "eth7", 1);
 
     node_set_loopback_address(R1, "122.1.1.1");
-    node_set_intf_ip_address(R1, "eth0/0", "10.1.1.1", 24);
-    node_set_intf_ip_address(R1, "eth0/7", "40.1.1.2", 24);
+    node_set_intf_ip_address(R1, "eth0", "10.1.1.1", 24);
+    node_set_intf_ip_address(R1, "eth7", "40.1.1.2", 24);
     
     node_set_loopback_address(R2, "122.1.1.2");
-    node_set_intf_ip_address(R2, "eth0/1", "10.1.1.2", 24);
-    node_set_intf_ip_address(R2, "eth0/2", "20.1.1.1", 24);
+    node_set_intf_ip_address(R2, "eth1", "10.1.1.2", 24);
+    node_set_intf_ip_address(R2, "eth2", "20.1.1.1", 24);
 
     node_set_loopback_address(R3, "122.1.1.3");
-    node_set_intf_ip_address(R3, "eth0/3", "20.1.1.2", 24);
-    node_set_intf_ip_address(R3, "eth0/4", "30.1.1.1", 24);
+    node_set_intf_ip_address(R3, "eth3", "20.1.1.2", 24);
+    node_set_intf_ip_address(R3, "eth4", "30.1.1.1", 24);
     
     node_set_loopback_address(R4, "122.1.1.4");
-    node_set_intf_ip_address(R4, "eth0/5", "30.1.1.2", 24);
-    node_set_intf_ip_address(R4, "eth0/6", "40.1.1.1", 24);
+    node_set_intf_ip_address(R4, "eth5", "30.1.1.2", 24);
+    node_set_intf_ip_address(R4, "eth6", "40.1.1.1", 24);
     
     network_start_pkt_receiver_thread(topo);
 

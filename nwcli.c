@@ -415,8 +415,8 @@ void nw_init_cli(void)
     param_t *debug_show = libcli_get_debug_show_hook();
     param_t *root       = libcli_get_root();
 
-    /* show topology */
     {
+        /* show topology */
         static param_t topology;
         init_param(&topology, CMD, "topology", show_nw_topology_handler, 0, INVALID, 0, "Dump complete n/w topology");
         libcli_register_param(show, &topology);
@@ -562,8 +562,29 @@ void nw_init_cli(void)
         }
     }
 
-    /* config node */
     {
+        /* config global */
+        static param_t global;
+        init_param(&global, CMD, "global", 0, 0, INVALID, 0, "global network-wide config");
+        libcli_register_param(config, &global);
+        {
+            /* config global stdout */
+            static param_t _stdout;
+            init_param(&_stdout, CMD, "stdout", traceoptions_handler, 0, INVALID, 0, "Turn ON stdio logging");
+            libcli_register_param(&global, &_stdout);
+            set_param_cmd_code(&_stdout, CMDCODE_DEBUG_GLOBAL_STDOUT);
+        }
+        {
+            /* config global no-stdout */
+            static param_t _no_stdout;
+            init_param(&_no_stdout, CMD, "no-stdout", traceoptions_handler, 0, INVALID, 0, "Turn OFF stdio logging");
+            libcli_register_param(&global, &_no_stdout);
+            set_param_cmd_code(&_no_stdout, CMDCODE_DEBUG_GLOBAL_NO_STDOUT);
+        }
+    }
+
+    {
+        /* config node */
         static param_t node;
         init_param(&node, CMD, "node", 0, 0, INVALID, 0, "\"node\" keyword");
         libcli_register_param(config, &node);
@@ -574,6 +595,9 @@ void nw_init_cli(void)
             init_param(&node_name, LEAF, 0, 0, validate_node_existence, STRING, "node-name", "Node Name");
             libcli_register_param(&node, &node_name);
             {
+                /* config node <node_name> traceoptions flag <flag-val> */
+                tcp_ip_traceoptions_cli(&node_name, NULL);
+
                 /* config node <node_name> interface */
                 static param_t interface;
                 init_param(&interface, CMD, "interface", 0, 0, INVALID, 0, "\"interface\" keyword");
@@ -585,8 +609,11 @@ void nw_init_cli(void)
                     init_param(&if_name, LEAF, 0, 0, 0, STRING, "if-name", "Interface Name");
                     libcli_register_param(&interface, &if_name);
                     {
-                        /* config node <node_name> interface <if_name> <up|down> */
+                        /* config node <node_name> interface <if-name> traceoptions flag <flag-val> */
+                        tcp_ip_traceoptions_cli(NULL, &if_name);
+                        
                         {
+                            /* config node <node_name> interface <if_name> <up|down> */
                             static param_t if_up_down_status;
                             init_param(&if_up_down_status, LEAF, 0, intf_config_handler, validate_if_up_down_status, STRING, "if-up-down", "<up | down>");
                             libcli_register_param(&if_name, &if_up_down_status);
