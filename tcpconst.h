@@ -22,4 +22,6 @@
 #define IP_HDR_INCLUDED (1  << 0)
 #define DATA_LINK_HDR_INCLUDED  (1 << 1)
 
+#define INTF_METRIC_DEFAULT 1
+
 #endif

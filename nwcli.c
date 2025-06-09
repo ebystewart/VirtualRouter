@@ -3,6 +3,7 @@
 #include "cmdcodes.h"
 #include "graph.h"
 #include "utils.h"
+#include "tcpconst.h"
 #include <stdio.h>
 
 
@@ -376,6 +377,32 @@ static int intf_config_handler(param_t *param, ser_buff_t *tlv_buf, op_mode enab
     uint32_t if_change_flags = 0U;
     switch(CMDCODE)
     {
+        case CMDCODE_INTF_CONFIG_METRIC:
+        {
+            uint32_t intf_existing_metric = get_link_cost(interface);
+            if(intf_existing_metric != intf_new_metric_val){
+                SET_BIT(if_change_flags, IF_METRIC_CHANGE_F);
+            }
+            switch(enable_or_disable)
+            {
+                case CONFIG_ENABLE:
+                {
+                    interface->link->cost = intf_new_metric_val;
+                    break;
+                }
+                case CONFIG_DISABLE:
+                {
+                    interface->link->cost = INTF_METRIC_DEFAULT;
+                    break;
+                }
+                default:
+                    ;
+            }
+            if(IS_BIT_SET(if_change_flags, IF_METRIC_CHANGE_F)){
+                nfc_intf_invoke_notification_to_sbscribers(interface, 0, if_change_flags);
+            }
+            break;
+        }
         case CMDCODE_CONF_INTF_UP_DOWN:
         {
             if(strncmp(if_up_down, "up", strlen("up")) == 0U){
