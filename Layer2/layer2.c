@@ -69,6 +69,11 @@ void interface_set_l2_mode(node_t *node, interface_t *interface, char *l2_mode_o
        }
 }
 
+void interface_unset_l2_mode(node_t *node, interface_t *interface, char *l2_mode_option)
+{
+
+}
+
 void node_set_intf_vlan_membership(node_t *node, char *intf_name, unsigned int vlan_id)
 {
     interface_t *intf = get_node_intf_by_name(node, intf_name);
@@ -130,7 +135,12 @@ void interface_set_vlan(node_t *node, interface_t *intf, unsigned int vlan_id)
     }
 }
 
-// caller needs to free calloc-ed memory after copying to actual buffer */
+void interface_unset_vlan(node_t *node,interface_t *interface, uint32_t vlan)
+{
+    
+}
+
+/* caller needs to free calloc-ed memory after copying to actual buffer */
 ethernet_frame_t *tag_pkt_with_vlan_id(ethernet_frame_t *eth_pkt, unsigned int total_pkt_size, \
     int vlan_id, unsigned int *new_pkt_size)
 {

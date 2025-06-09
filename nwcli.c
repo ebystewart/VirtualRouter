@@ -25,7 +25,17 @@ static int
 show_nw_topology_handler(param_t *param, ser_buff_t *tlv_buf, op_mode enable_or_disable){
 
     int CMDCODE = -1;
+    node_t *node = NULL;
+    char *node_name = NULL;
+    tlv_struct_t *tlv = NULL;
     CMDCODE = EXTRACT_CMD_CODE(tlv_buf);
+
+    TLV_LOOP_BEGIN(tlv_buf, tlv){
+        if(strncmp(&tlv->leaf_id, "node-name", sizeof("node-name")) == 0)
+            node_name = tlv->value;
+        else
+            assert(0);
+    }TLV_LOOP_END;
 
     switch(CMDCODE){
 
@@ -38,7 +48,13 @@ show_nw_topology_handler(param_t *param, ser_buff_t *tlv_buf, op_mode enable_or_
     return 0;
 }
 
+/*Interface Config Handler*/
+extern void interface_set_l2_mode(node_t *node, interface_t *interface, char *l2_mode_option);
+extern void interface_unset_l2_mode(node_t *node, interface_t *interface, char *l2_mode_option);
+extern void interface_set_vlan(node_t *node, interface_t *interface, uint32_t vlan);
+extern void interface_unset_vlan(node_t *node,interface_t *interface, uint32_t vlan);
 extern void dump_node_interface_stats(node_t * node);
+
 static int show_interface_handler(param_t *param, ser_buff_t *tlv_buf, op_mode enable_or_disable){
     
     int CMDCODE;
@@ -422,6 +438,35 @@ static int intf_config_handler(param_t *param, ser_buff_t *tlv_buf, op_mode enab
             }
             break;
         }
+        case CMDCODE_INTF_CONFIG_L2_MODE:
+        {
+            switch(enable_or_disable){
+                case CONFIG_ENABLE:
+                    interface_set_l2_mode(node, interface, l2_mode_option);
+                    break;
+                case CONFIG_DISABLE:
+                    interface_unset_l2_mode(node, interface, l2_mode_option);
+                    break;
+                default: 
+                    ;
+            }
+
+            break;
+        }
+        case CMDCODE_INTF_CONFIG_VLAN:
+        {
+            switch(enable_or_disable){
+                case CONFIG_ENABLE:
+                    interface_set_vlan(node, interface, vlan_id);
+                    break;
+                case CONFIG_DISABLE:
+                    interface_unset_vlan(node, interface, vlan_id);
+                    break;
+                default:
+                    ;
+            }
+            break;
+        }
         default:
             ;
     }
@@ -448,6 +493,20 @@ void nw_init_cli(void)
         init_param(&topology, CMD, "topology", show_nw_topology_handler, 0, INVALID, 0, "Dump complete n/w topology");
         libcli_register_param(show, &topology);
         set_param_cmd_code(&topology, CMDCODE_SHOW_NW_TOPOLOGY);
+        {
+            /*show topology node*/ 
+            static param_t node;
+            init_param(&node, CMD, "node", 0, 0, INVALID, 0, "\"node\" keyword");
+            libcli_register_param(&topology, &node);
+            libcli_register_display_callback(&node, display_graph_nodes);
+            {
+               /*show topology node <node-name>*/ 
+                static param_t node_name;
+                init_param(&node_name, LEAF, 0, show_nw_topology_handler, validate_node_existence, STRING, "node-name", "Node Name");
+                libcli_register_param(&node, &node_name);
+                set_param_cmd_code(&node_name, CMDCODE_SHOW_NW_TOPOLOGY);
+            }
+        }
 
         /* Show node */
         static param_t node;
@@ -511,7 +570,7 @@ void nw_init_cli(void)
                 {
                     /*show node <node-name> spf-result*/
                     static param_t spf;
-                    init_param(&spf, CMD, "spf", spf_algo_handler, 0, INVALID, 0, "SPF Results");
+                    init_param(&spf, CMD, "spf-result", spf_algo_handler, 0, INVALID, 0, "SPF Results");
                     libcli_register_param(&node_name, &spf);
                     set_param_cmd_code(&spf, CMDCODE_SHOW_SPF_RESULTS);
                  }           
