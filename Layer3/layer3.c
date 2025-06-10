@@ -44,7 +44,8 @@ bool_t is_layer3_local_delivery(node_t *node, unsigned int dst_ip)
     /* Checking for loopback address match */
     char dst_ip_str[16];
     dst_ip_str[15] = '\0';
-    //dst_ip = htonl(dst_ip);
+
+    dst_ip = htonl(dst_ip);
     inet_ntop(AF_INET, &dst_ip, dst_ip_str, 16);
 
     printf("%s: INFO - The destination IP %s\n", __FUNCTION__, dst_ip_str);
@@ -60,7 +61,9 @@ bool_t is_layer3_local_delivery(node_t *node, unsigned int dst_ip)
     unsigned int idx = 0U;
     for(; idx < MAX_IF_PER_NODE; idx++){
         intf = node->intf[idx];
-        if(!intf || intf->intf_nw_prop.is_ipaddr_config == FALSE)
+        if(!intf)
+            return FALSE;
+        if(intf->intf_nw_prop.is_ipaddr_config == FALSE)
             continue;
         intf_addr = IF_IP(intf);//intf->intf_nw_prop.ip_addr.ip_addr;
         if(strncmp(intf_addr, dst_ip_str, 16U) == 0U){
@@ -238,8 +241,10 @@ void clear_rt_table(rt_table_t *rt_table)
 
     ITERATE_GLTHREAD_BEGIN(&rt_table->route_list, curr){
         l3_route = rt_glue_to_l3_route(curr);
+        if(l3_is_direct_route(l3_route))
+            continue;
         remove_glthread(&l3_route->rt_glue);
-        free(l3_route);
+        l3_route_free(l3_route);
     }ITERATE_GLTHREAD_END(&rt_table->route_list, curr);
 }
 

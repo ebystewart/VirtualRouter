@@ -555,7 +555,7 @@ static void spf_explore_nbrs(node_t *spf_root, node_t *curr_node, glthread_t *pr
                     spf_root->node_name,  nbr->node_name, nbr->spf_data->spf_metric);
             #endif
 
-            glthread_priority_insert(&priority_lst, &nbr->spf_data->priority_thread_glue, \
+            glthread_priority_insert(priority_lst, &nbr->spf_data->priority_thread_glue, \
                                     spf_comparison_fn, spf_data_offset_from_priority_thread_glue);
         }
         /* In case of ECMP */
@@ -583,7 +583,37 @@ static void spf_explore_nbrs(node_t *spf_root, node_t *curr_node, glthread_t *pr
     spf_flush_nexthops(curr_node->spf_data->nexthops);
 }
 
+static void spf_algo_interface_update(void *arg, size_t arg_size){
+
+	intf_notif_data_t *intf_notif_data = 
+		(intf_notif_data_t *)arg;
+
+	uint32_t flags = intf_notif_data->change_flags;
+	interface_t *interface = intf_notif_data->interface;
+	intf_nw_prop_t *old_intf_nw_props = intf_notif_data->old_intf_nw_prop;
+
+
+	printf("%s() called\n", __FUNCTION__);
+
+    /*Run spf if interface is transition to up/down*/
+    if(IS_BIT_SET(flags, IF_UP_DOWN_CHANGE_F) ||
+       IS_BIT_SET(flags, IF_METRIC_CHANGE_F )) 
+    {
+        goto RUN_SPF;
+    }
+
+    return;
+
+RUN_SPF:
+    /* Run spf on all nodes of topo, not just 
+     * the node on which interface is made up/down
+     * or any other intf config is changed
+     * otherwise it may lead to L3 loops*/
+    compute_spf_all_routers(topo);
+}
+
 void init_spf_algo(void)
 {
     compute_spf_all_routers(topo);
+    nfc_intf_register_for_events(spf_algo_interface_update);
 }

@@ -668,7 +668,6 @@ void nw_init_cli(void)
             set_param_cmd_code(&_no_stdout, CMDCODE_DEBUG_GLOBAL_NO_STDOUT);
         }
     }
-
     {
         /* config node */
         static param_t node;
