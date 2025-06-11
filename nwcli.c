@@ -729,7 +729,7 @@ void nw_init_cli(void)
                         /* config node <node_name> route <ip-address> <mask> */
                         {
                             static param_t mask;
-                            init_param(&mask, LEAF, 0, l3_config_handler, validate_mask_value, INT, "mask", "mask(0-32");
+                            init_param(&mask, LEAF, 0, l3_config_handler, validate_mask_value, INT, "mask", "mask(0-32)");
                             libcli_register_param(&ip_addr, &mask);
                             set_param_cmd_code(&mask, CMDCODE_CONF_NODE_L3ROUTE);
 

@@ -53,4 +53,11 @@ struct _wheel_timer_t {
     slotlist_t slotlist[0];
 };
 
+/* Gives the absolute slot number since the time ET has started */
+#define GET_WT_CURRENT_ABS_SLOT_NO(wt) ((wt->current_cycle_no * wt->wheel_size) + wt->current_clock_tic)
+
+#define WT_UPTIME(wt_ptr) (GET_WT_CURRENT_ABS_SLOT_NO(wt_ptr) * wt_ptr->clock_tic_interval)
+
+#define WT_SLOTLIST(wt_ptr, index) (&(wt_ptr->slotlist[index])) 
+
 #endif

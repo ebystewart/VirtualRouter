@@ -220,7 +220,7 @@ l2_forward_ip_packet(node_t *node, unsigned int next_hop_ip, char *outgoing_intf
     next_hop_ip = htonl(next_hop_ip);
     inet_ntop(AF_INET, &next_hop_ip, next_hop_ip_str, 16U);
     /* Restore again, since htonl reverses the byte order */
-    //next_hop_ip = htonl(next_hop_ip); // This is not required and unnecessarily reverses the byte order
+    next_hop_ip = htonl(next_hop_ip); /* required for comparinf against local IPs */
 
     if(outgoing_intf){
         /* Case #1 : l2 forwarding 
@@ -340,6 +340,7 @@ static void promote_pkt_to_layer2(node_t *node, interface_t *iif, ethernet_frame
                     break;
             }
         }
+        case IP_IN_IP:
         case ETH_IP:
         {
             promote_pkt_to_layer3(node, iif, GET_ETHERNET_HDR_PAYLOAD(eth_frame), pkt_size - GET_ETH_HDR_SIZE_EXCL_PAYLOAD(eth_frame),\
@@ -528,7 +529,7 @@ arp_entry_t *create_arp_sane_entry(arp_table_t *arp_table, char *ip_addr)
         return arp_entry;
     }
     /* If ARP entry does not exist, create a new sane entry */
-    arp_entry = calloc(1, sizeof(arp_entry_t));
+    arp_entry = malloc(20U);//calloc(1, sizeof(arp_entry_t));
     strncpy(arp_entry->ip_addr.ip_addr, ip_addr, 16U);
     arp_entry->ip_addr.ip_addr[15] = '\0';
     init_glthread(&arp_entry->arp_pending_list);

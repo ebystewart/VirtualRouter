@@ -120,3 +120,122 @@ run spf all
 show node R1 spf
 show node R1 spf
 run spf all
+run spf all
+show node R1 rt
+run spf all
+show node R1 spf
+run spf all
+show node R1 rt
+show node R1 rt
+show node R1 rt
+show node R1 rt
+show node R1 rt
+show node R1 rt
+show node R1 rt
+show node R1 rt
+show node R1 rt
+show node R1 rt
+show node R1 rt
+run spf all
+show node R1 rt
+run spf all
+show node R1 rt
+show node R1 spf
+run spf all
+show node R1 rt
+show node R1 rt
+show node R1 rt
+run spf all
+show node R1 rt
+run spf all
+run spf all
+show node R1 rt
+run node R1 spf
+show node R1 rt
+run node R1 spf
+show node R1 rt
+show node R1 spf
+config node R1 route /
+122.1.1.2 32 10.1.1.2 eth0/0
+122.1.1.3 32 10.1.1.2 eth0/0
+122.1.1.4 32 40.1.1.1 eth0/7
+cd
+show node R1 rt
+show node R1 spf
+show node R1 rt
+run node R1 spf
+show node R1 rt
+show node R1 spf
+show node R1 rt
+run node R1 spf
+show node R1 rt
+show node R1 rt
+run node R1 spf
+show node R1 rt
+run node R1 spf
+config global stdout
+config global stdout
+config node R1 traceoptions flag all
+config node R1 /
+interface eth0 /
+config global stdout
+config node R1 traceoptions flag all
+config node R1 interface eth0 traceoptions flag all
+show node R1 log-status
+config global stdout
+show node R1 log-status
+config node R1 traceoptions flag stdout
+show node R1 log-status
+show node R1 rt
+run node R1 ping 122.1.1.2
+show node R1 rt
+show node R2 rt
+show node R3 rt
+show node R4 rt
+run node R1 ping 122.1.1.2
+show node R1 arp
+show node R2 arp
+run node R1 ping 122.1.1.2
+run node R1 resolve-arp 10.1.1.2
+run node R1 ping 122.1.1.2
+conf node R2 route 122.1.1.2 32 NA NA
+conf node R2 route 122.1.1.2 32 10.1.1.2 eth1
+show node R1 rt
+show node R1 rt
+run node R1 ping 122.1.1.2
+show node R1 rt
+run node R1 ping 122.1.1.2
+show node R1 rt
+run node R1 ping 122.1.1.3
+show node R1 rt
+show node R2 rt
+show node R3 rt
+show node R4 rt
+show node R1 mac
+show node R1 arp
+run node R1 ping 122.1.1.2
+show node R1 mac
+show node R1 arp
+run node R1 ping 122.1.1.2
+show node R1 arp
+run node R1 ping 122.1.1.2
+run node R1 ping 122.1.1.3
+run node R1 ping 122.1.1.4
+show node R1 arp
+run node R2 ping 122.1.1.1
+show node R2 arp
+show node R3 arp
+show node R3 arp
+run node R3 ping 122.1.1.1
+show node R1 rt
+run node R1 ping 122.1.1.2
+show node R1 rt
+run node R1 ping 122.1.1.2
+run node R1 ping 122.1.1.2
+run node R1 ping 122.1.1.2
+run node R1 ping 122.1.1.2
+run node R1 ping 122.1.1.2
+run node R1 ping 122.1.1.2
+run node R1 ping 122.1.1.1
+run node R1 ping 122.1.1.1
+run node R1 ping 122.1.1.3
