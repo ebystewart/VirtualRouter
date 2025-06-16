@@ -5,7 +5,7 @@ LIBS=-lpthread -L ./CommandParser -lcli
 OBJS=glueThread/glthread.o	\
 		graph.o				\
 		topologies.o		\
-		main.o			\
+		main.o				\
 		net.o				\
 		nwcli.o				\
 		comm.o				\
@@ -15,12 +15,13 @@ OBJS=glueThread/glthread.o	\
 		Layer3/layer3.o		\
 		Layer3/ip.o		    \
 		Layer5/layer5.o		\
-		Layer5/spf_algo/spf.o		\
+		Layer5/spf_algo/spf.o	\
 		Layer5/ping.o		\
 		tcpip_notif.o	 	\
 		tcp_ip_trace.o		\
 		tcp_ip_stack_init.o	\
-		notif.o
+		notif.o				\
+		WheelTimer/WheelTimer.o
 
 VirtualRouter.exe:${OBJS} CommandParser/libcli.a
 	${CC} ${CFLAGS} ${OBJS} -o VirtualRouter.exe ${LIBS}
@@ -86,7 +87,10 @@ Layer5/spf_algo/spf.o:Layer5/spf_algo/spf.c
 	${CC} ${CFLAGS} -c Layer5/spf_algo/spf.c -I . -o Layer5/spf_algo/spf.o
 
 notif.o:notif.c
-	${CC} ${CFLAGS} -c notif.c -I . -o notif.o	
+	${CC} ${CFLAGS} -c notif.c -I . -o notif.o
+
+WheelTimer/WheelTimer.o:WheelTimer/WheelTimer.c
+	${CC} ${CFLAGS} -c WheelTimer/WheelTimer.c -I . -I WheelTimer/ -o WheelTimer/WheelTimer.o	
 
 CommandParser/libcli.a:
 	(cd CommandParser; make)
@@ -97,7 +101,8 @@ clean:
 	rm Layer2/*.o
 	rm Layer3/*.o
 	rm Layer5/*.o
-	rm Layer5/spf_algo/*.o	
+	rm Layer5/spf_algo/*.o
+	rm WheelTimer/*.o
 	rm *.exe
 	(cd CommandParser; make clean)
 
