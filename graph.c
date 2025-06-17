@@ -1,5 +1,6 @@
 #include "graph.h"
 #include "glueThread/glthread.h"
+#include "tcp_ip_trace.h"
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>

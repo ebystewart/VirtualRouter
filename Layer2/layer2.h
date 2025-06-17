@@ -79,6 +79,7 @@ typedef struct arp_entry_{
     bool_t is_sane;
     /* List of packets which are pending for ARP resolution */
     glthread_t arp_pending_list;
+    wheel_timer_elem_t *exp_timer_wt_elem;
 }arp_entry_t;
 
 GLTHREAD_TO_STRUCT(arp_glue_to_arp_entry, arp_entry_t, arp_glue);
@@ -123,7 +124,7 @@ ethernet_frame_t *untag_pkt_with_vlan_id(ethernet_frame_t *eth_pkt, unsigned int
 void layer2_frame_recv(node_t *node, interface_t *interface, char *pkt, unsigned int pkt_size);
 static void promote_pkt_to_layer2(node_t *node, interface_t *interface, ethernet_frame_t *eth_frame, unsigned int pkt_size);
 //void init_arp_table(arp_table_t **arp_table);
-bool_t arp_table_entry_add(arp_table_t *arp_table, arp_entry_t *arp_entry, glthread_t **arp_pending_list);
+bool_t arp_table_entry_add(node_t *node, arp_table_t *arp_table, arp_entry_t *arp_entry, glthread_t **arp_pending_list);
 arp_entry_t *arp_table_lookup(arp_table_t *arp_table, char *ip_addr);
 void arp_table_update_from_arp_reply(arp_table_t *arp_table, arp_packet_t *arp_pkt, interface_t *iif);
 void delete_arp_table_entry(arp_table_t *arp_table, char *ip_addr);
@@ -136,9 +137,13 @@ static void send_arp_reply_msg(ethernet_frame_t *eth_frame_in, interface_t *oif)
 static void process_arp_reply_msg(node_t *node, interface_t *iif, ethernet_frame_t *eth_frame);
 static void process_arp_broadcast_request(node_t *node, interface_t *iif, ethernet_frame_t *eth_frame);
 
+wheel_timer_elem_t *arp_entry_create_expiration_timer(node_t *node, arp_entry_t *arp_entry, uint16_t exp_time);
+void arp_entry_delete_expiration_timer(arp_entry_t *arp_entry);
+void arp_entry_refresh_expiration_timer(arp_entry_t *arp_entry);
+uint16_t arp_entry_get_exp_time_left(arp_entry_t *arp_entry);
 
-
-arp_entry_t *create_arp_sane_entry(arp_table_t *arp_table, char *ip_addr);
+//arp_entry_t *create_arp_sane_entry(arp_table_t *arp_table, char *ip_addr);
+void create_arp_sane_entry(node_t *node, arp_table_t *arp_table, char *ip_addr, char *pkt, uint32_t pkt_size);
 static bool_t arp_entry_sane(arp_entry_t *arp_entry){
     return arp_entry->is_sane;
 }

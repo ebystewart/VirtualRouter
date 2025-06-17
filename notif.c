@@ -1,5 +1,7 @@
 #include "notif.h"
 #include <assert.h>
+#include <string.h>
+#include <stdlib.h>
 
 void nfc_register_notif_chain(notif_chain_t *nfc, notif_chain_elem_t *nfce)
 {

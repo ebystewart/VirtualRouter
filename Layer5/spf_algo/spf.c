@@ -454,7 +454,7 @@ static void spf_record_result(node_t *spf_root, node_t *processed_node)
 {
     /* we have dequeued the processed node from the priority queue after 
        determining it as the least cost node to the root node */
-    /* check if the result is lready stored */
+    /* check if the result is already stored */
     assert(!spf_lookup_spf_result_by_node(spf_root, processed_node));
 
     /* allocate memory for spf result */

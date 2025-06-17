@@ -366,4 +366,9 @@ bool_t is_same_subnet(char *ip_addr, char mask, char *other_ip_addr){
     return FALSE;
 }
 
+wheel_timer_t *node_get_timer_instance(node_t *node)
+{
+    return node->node_nw_prop.wt;
+}
+
 #endif

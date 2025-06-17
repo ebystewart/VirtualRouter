@@ -239,3 +239,27 @@ run node R1 ping 122.1.1.2
 run node R1 ping 122.1.1.1
 run node R1 ping 122.1.1.1
 run node R1 ping 122.1.1.3
+show node R1 rt
+show node R2 rt
+show node R2 arp
+show node R2 mac
+run node R1 ping 122.1.1.2
+run node R1 ping 122.1.1.2
+run node R1 ping 122.1.1.2
+run node R1 ping 122.1.1.2
+run node R1 ping 122.1.1.2
+run node R1 ping 122.1.1.2
+show topology
+show node R1 rt
+show node R1 arp
+run node R1 ping 122.1.1.2
+run node R1 resolve-arp 122.1.1.2
+run node R1 resolve-arp 10.1.1.2
+show node R1 arp
+show node R1 mac
+run node R1 resolve-arp 20.1.1.2
+run node R1 ping 122.1.1.2
+show node R1 rt
+run node R1 ping 122.1.1.1
+run node R1 ping 122.1.1.2
+run node R1 ping 122.1.1.2

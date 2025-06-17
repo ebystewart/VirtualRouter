@@ -194,7 +194,7 @@ wheel_timer_elem_t *register_app_event(wheel_timer_t *wt, app_call_back call_bac
 	wt_elem->app_callback  = call_back;
     if(arg && arg_size){
 		wt_elem->arg = arg;
-        wt_elem->arg_size      = arg_size;
+        wt_elem->arg_size = arg_size;
     }
 	wt_elem->is_recurrence = is_recursive;
     init_glthread(&wt_elem->glue);

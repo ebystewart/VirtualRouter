@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include <memory.h>
 #include "tcp_ip_trace.h"
+#include "WheelTimer/WheelTimer.h"
 
 
 #define TRUE  1U
@@ -56,6 +57,9 @@ typedef struct node_nw_prop_{
     bool_t is_lb_addr_config;
     ip_add_t lb_addr; /* Loopback address of the node */
 
+    /* Timer properties */
+    wheel_timer_t *wt;
+
     /* sending buffer */
     char *send_buffer;  /* used to send out pkts */
     char *send_log_buffer; /* used for logging */
@@ -90,11 +94,14 @@ extern void init_rt_table(rt_table_t **rt_table);
 
 static inline void init_node_nw_prop(node_nw_prop_t *node_nw_prop)
 {
+    node_nw_prop->flags = 0;
     node_nw_prop->is_lb_addr_config = FALSE;
     memset(&node_nw_prop->lb_addr, 0, 16);
     init_arp_table(&(node_nw_prop->arp_table));
     init_mac_table(&(node_nw_prop->mac_table));
     init_rt_table(&(node_nw_prop->rt_table));
+    node_nw_prop->wt = init_wheel_timer(60, 1);
+    start_wheel_timer(node_nw_prop->wt);
     node_nw_prop->send_buffer = calloc(1, 2*TCP_PRINT_BUFFER_SIZE);
     node_nw_prop->send_log_buffer = calloc(1, TCP_PRINT_BUFFER_SIZE);
 }
@@ -182,6 +189,8 @@ bool_t is_same_subnet(char *ip_addr, char mask, char *other_ip_addr);
 #if 0
 bool_t is_same_subnet(char *ip_addr, uint16_t mask, char *ip_to_compare);
 #endif
+
+wheel_timer_t *node_get_timer_instance(node_t *node);
 
 static inline char *intf_l2_mode_str(intf_l2_mode_t intf_l2_mode)
 {
