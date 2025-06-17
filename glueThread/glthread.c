@@ -73,8 +73,7 @@ void remove_glthread(glthread_t *curr_glthread)
         return;
     }
     curr_glthread->left->right = curr_glthread->right;
-    if(curr_glthread->right != NULL)
-        curr_glthread->right->left = curr_glthread->left;
+    curr_glthread->right->left = curr_glthread->left;
     curr_glthread->left = NULL;
     curr_glthread->right = NULL;
 }
