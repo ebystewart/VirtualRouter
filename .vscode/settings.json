@@ -1,0 +1,11 @@
+{
+    "files.associations": {
+        "io_context": "c",
+        "tcp_public.h": "c",
+        "ip.h": "c",
+        "layer3.h": "c",
+        "layer2.h": "c",
+        "comm.h": "c",
+        "tcp_ip_trace.h": "c"
+    }
+}

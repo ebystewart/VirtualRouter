@@ -361,7 +361,7 @@ void tcp_dump_l3_fwding_logger(node_t *node, char *oif_name, char *gw_ip)
     tcp_write_data(sock_fd, log_file1, NULL, TCP_GET_NODE_SEND_LOG_BUFFER(node), rc);
 }
 
-tcp_dump_send_logger(node_t *node, interface_t *intf, char *pkt, uint32_t pkt_size, hdr_type_t hdr_type)
+void tcp_dump_send_logger(node_t *node, interface_t *intf, char *pkt, uint32_t pkt_size, hdr_type_t hdr_type)
 {
     int rc = 0;
     if(node->log_info.all || node->log_info.send){

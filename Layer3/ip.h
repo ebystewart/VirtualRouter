@@ -27,7 +27,7 @@ typedef struct ip_hdr_{
 
 #define IP_HDR_LEN_IN_BYTES(ip_hdr_ptr)       (ip_hdr_ptr->hdr_len * 4U) // TBC: sizeof(ip_hdr_t)
 #define IP_PKT_TOTAL_LEN_IN_BYTES(ip_hdr_ptr) (ip_hdr_ptr->total_length * 4U)
-#define IP_PKT_PAYLOAD_PTR(ip_hdr_ptr)        ((char *)(ip_hdr_ptr + IP_HDR_LEN_IN_BYTES(ip_hdr_ptr)))
+#define IP_PKT_PAYLOAD_PTR(ip_hdr_ptr)        ((char *)ip_hdr_ptr + (ip_hdr_ptr->hdr_len * 4U))
 #define IP_PKT_PAYLOAD_SIZE(ip_hdr_ptr)       (IP_PKT_TOTAL_LEN_IN_BYTES(ip_hdr_ptr) - IP_HDR_LEN_IN_BYTES(ip_hdr_ptr))
 
 void initialize_ip_pkt(ip_hdr_t *ip_hdr);
